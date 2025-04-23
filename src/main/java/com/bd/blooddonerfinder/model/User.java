@@ -2,6 +2,7 @@ package com.bd.blooddonerfinder.model;
 
 import com.bd.blooddonerfinder.model.enums.BloodGroup;
 import com.bd.blooddonerfinder.model.enums.Role;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -13,9 +14,9 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Getter
-@Setter
 @Data
+@NoArgsConstructor
+@Table(name = "app_user")
 public class User {
 
     @Id
@@ -25,8 +26,10 @@ public class User {
     private String email;
     private String phone;
     @Enumerated(EnumType.STRING)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private BloodGroup bloodGroup;
     @Enumerated(EnumType.STRING)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Role role;
     private Boolean isVerified;
     private Boolean isAvailable;
@@ -44,10 +47,6 @@ public class User {
         this.bloodGroup = bloodGroup;
         this.role = role;
         this.location = location;
-    }
-
-    public User() {
-
     }
 
     @Override
