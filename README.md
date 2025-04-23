@@ -53,3 +53,7 @@ A RESTful backend API built with **Spring Boot** to streamline the process of fi
 
 ### 📝 Register User
 ### 🔍 Donor Search
+
+--
+### Clone the repo 
+git clone https://github.com/ADS77/Blood-Donor-Finder

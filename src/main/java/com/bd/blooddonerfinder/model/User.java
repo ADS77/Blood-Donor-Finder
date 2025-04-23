@@ -4,13 +4,18 @@ import com.bd.blooddonerfinder.model.enums.BloodGroup;
 import com.bd.blooddonerfinder.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
+@Getter
+@Setter
 @Data
-@NoArgsConstructor
 public class User {
 
     @Id
@@ -41,4 +46,20 @@ public class User {
         this.location = location;
     }
 
+    public User() {
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(id, user.id) && Objects.equals(name, user.name) && Objects.equals(email, user.email) && Objects.equals(phone, user.phone) && bloodGroup == user.bloodGroup && role == user.role && Objects.equals(isVerified, user.isVerified) && Objects.equals(isAvailable, user.isAvailable) && Objects.equals(lastDonationDate, user.lastDonationDate) && Objects.equals(location, user.location) && Objects.equals(createdAt, user.createdAt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, email, phone, bloodGroup, role, isVerified, isAvailable, lastDonationDate, location, createdAt);
+    }
 }
