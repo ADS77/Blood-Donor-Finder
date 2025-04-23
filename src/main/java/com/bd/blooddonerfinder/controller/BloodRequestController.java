@@ -4,6 +4,7 @@ import com.bd.blooddonerfinder.model.BloodRequest;
 import com.bd.blooddonerfinder.payload.request.BloodRequestDto;
 import com.bd.blooddonerfinder.payload.response.RestApiResponse;
 import com.bd.blooddonerfinder.service.BloodRequestService;
+import com.bd.blooddonerfinder.service.BloodRequestServiceImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/blood-request")
 public class BloodRequestController {
-    private final BloodRequestService bloodRequestService;
+    private final BloodRequestServiceImpl bloodRequestService;
 
-    public BloodRequestController(BloodRequestService bloodRequestService) {
+    public BloodRequestController(BloodRequestServiceImpl bloodRequestService) {
         this.bloodRequestService = bloodRequestService;
     }
 

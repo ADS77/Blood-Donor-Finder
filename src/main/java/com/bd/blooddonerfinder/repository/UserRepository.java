@@ -13,6 +13,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findById(long id);
     Optional<User> findByEmail(String email);
-    List<User> findNearByDonors(Role role, BloodGroup group);
+    List<User> findNearByRoleAndBloodGroup(Role role, BloodGroup group);
 
 }

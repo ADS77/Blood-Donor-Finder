@@ -20,7 +20,7 @@ public class DonorSearchServiceImpl implements DonorSearchService{
 
     @Override
     public List<User> findNearByDonors(double lat, double lon, BloodGroup bloodGroup, double radiusKm) {
-        List<User> allDonors = userRepository.findNearByDonors(Role.DONOR, bloodGroup);
+        List<User> allDonors = userRepository.findNearByRoleAndBloodGroup(Role.DONOR, bloodGroup);
         List<User> nearByDonors = new ArrayList<>();
         for(User user : allDonors){
             Location location = user.getLocation();

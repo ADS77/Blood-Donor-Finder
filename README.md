@@ -4,6 +4,33 @@ A RESTful backend API built with **Spring Boot** to streamline the process of fi
 
 ---
 
+### 🔧 Prerequisites
+
+Make sure you have the following installed:
+
+- Java 17+
+- Maven (`mvn -v`)
+- Docker & Docker Compose (`docker -v`, `docker-compose -v`)
+### 📦 Step 1: Build the Spring Boot Application
+
+```bash
+./mvnw clean package
+```
+### 🐳  Step 2: Start PostgreSQL with Docker
+```bash
+cd Docker
+docker-compose up -d
+```
+### ▶️  Step 3: Deploy Application locally
+```bash
+./mvnw spring-boot:run -DskipTests
+```
+OR
+### ▶️ Deploy Application with jar
+```bash
+java -jar target/blood-doner-finder-0.0.1-SNAPSHOT.jar
+
+```
 ## 🚀 Features
 
 - 🔐 User Authentication & Role-based Access (Admin / Donor / Receiver)
@@ -17,13 +44,13 @@ A RESTful backend API built with **Spring Boot** to streamline the process of fi
 
 ## 🏗️ Tech Stack
 
-| Layer      | Technology |
-|-----------|------|
-| Backend   | Spring Boot |
-| Database  | MySQL|
+| Layer      | Technology     |
+|-----------|----------------|
+| Backend   | Spring Boot    |
+| Database  | PostgreSQL     |
 | Messaging | Twilio SMS API |
-| Build     | Maven  |
-| Versioning| Git  |
+| Build     | Maven          |
+| Versioning| Git            |
 
 ---
 <!--
@@ -53,3 +80,7 @@ A RESTful backend API built with **Spring Boot** to streamline the process of fi
 
 ### 📝 Register User
 ### 🔍 Donor Search
+
+--
+### Clone the repo 
+git clone https://github.com/ADS77/Blood-Donor-Finder
