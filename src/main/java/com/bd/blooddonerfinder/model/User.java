@@ -23,7 +23,9 @@ public class User {
     @GeneratedValue
     private Long id;
     private String name;
+    @Column(unique = true, nullable = false)
     private String email;
+    @Column(unique = true, nullable = false)
     private String phone;
     @Enumerated(EnumType.STRING)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

@@ -27,7 +27,6 @@ public class DonorSearchController {
                                                                       @RequestParam(defaultValue = "10") double radius){
         List<User> nearByUserList = donorSearchService.findNearByDonors(lat, lon, bloodGroup, radius);
         return ResponseEntity.ok()
-                .body((RestApiResponse<List<User>>) nearByUserList);
-                //.body(RestApiResponse.success(nearByUserList,"Fetched nearby user list successfully"));
+                .body(RestApiResponse.success(nearByUserList,"Fetched nearby user list successfully"));
     }
 }

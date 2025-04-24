@@ -23,43 +23,58 @@ public class UserServiceImpl implements UserService{
     @Override
     public RestApiResponse<User> registerUser(UserRegistrationRequest registrationRequest) {
         RestApiResponse<User> apiResponse = new RestApiResponse<>();
-        if(registrationRequest != null){
-            try {
-                Optional<User> optionalUser = userRepository.findByEmail(registrationRequest.getEmail());
-                if(optionalUser.isEmpty()){
-                    User newUser = new User(
-                            registrationRequest.getName(),
-                            registrationRequest.getEmail(),
-                            registrationRequest.getPhone(),
-                            registrationRequest.getBloodGroup(),
-                            registrationRequest.getRole(),
-                            registrationRequest.getLocation()
-                    );
-                    newUser.setCreatedAt(LocalDateTime.now());
-                    newUser.setIsVerified(false);
-                    newUser.setIsAvailable(true);
-                    userRepository.save(newUser);
-                    log.debug("Registration successful");
-                    apiResponse.setData(newUser);
-                    apiResponse.setMessage("Registration successful");
-                    apiResponse.setStatus(HttpStatus.OK);
-                }
-                else {
-                    apiResponse.setData(optionalUser.get());
-                    apiResponse.setMessage("User already exists");
-                    apiResponse.setStatus(HttpStatus.CONFLICT);
-                }
-            }catch (Exception e){
-                log.error("Error while registering user : {}", e.getMessage());
-                apiResponse.setMessage("Registration Failed");
-                apiResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-            }
 
-        }else {
+        if (registrationRequest == null) {
             apiResponse.setData(null);
             apiResponse.setStatus(HttpStatus.BAD_REQUEST);
-            apiResponse.setMessage("Registration failed (reg request is null) ");
+            apiResponse.setMessage("Registration failed (registration request is null)");
+            return apiResponse;
         }
-        return  apiResponse;
+
+        try {
+            boolean emailExists = userRepository.existsByEmail(registrationRequest.getEmail());
+            boolean phoneExists = userRepository.existsByPhone(registrationRequest.getPhone());
+
+            if (emailExists || phoneExists) {
+                apiResponse.setData(null);
+                apiResponse.setStatus(HttpStatus.CONFLICT);
+                apiResponse.setMessage(
+                        emailExists && phoneExists
+                                ? "Email and Phone number already in use"
+                                : emailExists
+                                ? "Email already in use"
+                                : "Phone number already in use"
+                );
+                return apiResponse;
+            }
+
+            User newUser = new User(
+                    registrationRequest.getName(),
+                    registrationRequest.getEmail(),
+                    registrationRequest.getPhone(),
+                    registrationRequest.getBloodGroup(),
+                    registrationRequest.getRole(),
+                    registrationRequest.getLocation()
+            );
+
+            newUser.setCreatedAt(LocalDateTime.now());
+            newUser.setIsVerified(false);
+            newUser.setIsAvailable(true);
+
+            userRepository.save(newUser);
+            log.debug("Registration successful");
+
+            apiResponse.setData(newUser);
+            apiResponse.setMessage("Registration successful");
+            apiResponse.setStatus(HttpStatus.OK);
+
+        } catch (Exception e) {
+            log.error("Error while registering user: {}", e.getMessage());
+            apiResponse.setMessage("Registration Failed");
+            apiResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return apiResponse;
     }
+
 }
