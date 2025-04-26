@@ -41,6 +41,7 @@ public class User {
     private Location location;
 
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public User(String name, String email, String phone, BloodGroup bloodGroup, Role role, Location location) {
         this.name = name;
