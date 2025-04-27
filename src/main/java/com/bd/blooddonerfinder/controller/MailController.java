@@ -19,7 +19,7 @@ public class MailController {
 
     @PostMapping("/send")
     public ResponseEntity<String> sendMail(@RequestBody SendMailRequest sendMailRequest){
-        mailService.sendMail(sendMailRequest.getMailTo(), sendMailRequest.getSubject(), sendMailRequest.getBody());
+        mailService.sendMail(sendMailRequest);
         return ResponseEntity.ok().body("Mail sent");
     }
 }

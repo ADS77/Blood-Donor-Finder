@@ -2,6 +2,7 @@ package com.bd.blooddonerfinder.model;
 
 import jakarta.persistence.Embeddable;
 import lombok.Data;
+import lombok.ToString;
 
 import java.io.Serializable;
 
