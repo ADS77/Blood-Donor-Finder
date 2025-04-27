@@ -25,11 +25,7 @@ public class DonorSearchController {
     @GetMapping("/near-by-donors")
     public ResponseEntity<RestApiResponse<List<User>>> getNearByDonors(@RequestBody DonorSearchRequest donorSearchRequest){
         if(donorSearchRequest.getRadius() <= 0) donorSearchRequest.setRadius(RADIUS);
-        List<User> nearByUserList = donorSearchService.findNearByDonors(
-                donorSearchRequest.getLatitude(),
-                donorSearchRequest.getLongitude(),
-                donorSearchRequest.getBloodGroup(),
-                donorSearchRequest.getRadius());
+        List<User> nearByUserList = donorSearchService.findNearByDonors(donorSearchRequest);
         log.debug("nearByUserList : {}", nearByUserList);
         return ResponseEntity.ok()
                 .body(RestApiResponse.success(Collections.singletonList(nearByUserList),"Fetched nearby user list successfully"));
