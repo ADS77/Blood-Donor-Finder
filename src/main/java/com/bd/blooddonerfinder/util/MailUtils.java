@@ -1,13 +1,19 @@
 package com.bd.blooddonerfinder.util;
 
-import com.bd.blooddonerfinder.model.Location;
+import com.bd.blooddonerfinder.model.User;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class MailUtils {
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
                     + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$");
+    @Value("${min.days.between.donation}")
+    private static int MIN_GAP_DAYS;
 
     public static boolean isValidEmail(String email){
         if(email == null || email.isBlank()){
@@ -18,7 +24,7 @@ public class MailUtils {
                 .matches();
     }
 
-        public static String buildHtmlBody(String recipientName, String location, String phoneNumber, String organizationName) {
+    public static String buildHtmlBody(String recipientName, String location, String phoneNumber, String organizationName) {
             return String.format("""
             <p>Dear %s,</p>
             
@@ -39,13 +45,20 @@ public class MailUtils {
                     safeNull(phoneNumber, "N/A"),
                     safeNull(organizationName, "Blood Donation Team")
             );
-        }
+    }
 
-
-
-        private static String safeNull(String value, String defaultValue) {
+    private static String safeNull(String value, String defaultValue) {
             return value == null || value.trim().isEmpty() ? defaultValue : value;
-        }
+    }
+
+    public static List<User> filterEligibleDonors(List<User> donorList){
+        LocalDate today = LocalDate.now();
+        return donorList.stream()
+                .filter(donor -> donor.getLastDonationDate() == null ||
+                        donor.getLastDonationDate().isBefore(
+                                today.minusDays(MIN_GAP_DAYS)))
+                .collect(Collectors.toList());
+    }
 
 
 
