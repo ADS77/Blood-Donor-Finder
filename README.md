@@ -76,11 +76,14 @@ java -jar target/blood-doner-finder-0.0.1-SNAPSHOT.jar
 ---
 -->
 
-## 📡 Key APIs
+---
 
-### 📝 Register User
-### 🔍 Donor Search
+## 📑 API Documentation
 
+Once the application is running, you can explore and test all available endpoints via **Swagger UI**, which is automatically generated from  REST controllers.
+
+🔗 **Access Swagger UI**:
 --
+http://localhost:8080/swagger-ui/index.html
 ### Clone the repo 
 git clone https://github.com/ADS77/Blood-Donor-Finder
