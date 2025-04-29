@@ -3,7 +3,6 @@ package com.bd.blooddonerfinder.controller;
 import com.bd.blooddonerfinder.model.BloodRequest;
 import com.bd.blooddonerfinder.payload.request.BloodRequestDto;
 import com.bd.blooddonerfinder.payload.response.RestApiResponse;
-import com.bd.blooddonerfinder.service.BloodRequestService;
 import com.bd.blooddonerfinder.service.BloodRequestServiceImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

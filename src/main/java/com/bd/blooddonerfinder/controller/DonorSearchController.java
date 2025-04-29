@@ -1,13 +1,15 @@
 package com.bd.blooddonerfinder.controller;
 
 import com.bd.blooddonerfinder.model.User;
-import com.bd.blooddonerfinder.model.enums.BloodGroup;
 import com.bd.blooddonerfinder.payload.request.DonorSearchRequest;
 import com.bd.blooddonerfinder.payload.response.RestApiResponse;
 import com.bd.blooddonerfinder.service.DonorSearchService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
 import java.util.List;
