@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 
 @SpringBootApplication
-
+@EnableAsync
 public class BloodDonerFinderApplication {
 
     public static void main(String[] args) {

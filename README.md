@@ -16,14 +16,18 @@ Make sure you have the following installed:
 ```bash
 ./mvnw clean package
 ```
-### 🐳  Step 2: Start PostgreSQL with Docker
+### 🐳  Step 2: Start required tools with Docker
 ```bash
 cd Docker
 docker-compose up -d
 ```
-### ▶️  Step 3: Deploy Application locally
+### ▶️  Step 3: Deploy Application locally(WIndows)
 ```bash
 ./mvnw spring-boot:run -DskipTests
+```
+### ▶️  Step 3: Deploy Application locally(Ubuntu)
+```bash
+./mvn spring-boot:run -DskipTests
 ```
 OR
 ### ▶️ Deploy Application with jar

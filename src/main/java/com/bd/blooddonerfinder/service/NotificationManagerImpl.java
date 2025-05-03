@@ -25,14 +25,10 @@ public class NotificationManagerImpl implements NotificationManager {
                 String donorName = donor.getName();
                 SendMailRequest mailRequest = new SendMailRequest(
                         donor.getEmail(),
-                        searchRequest.getReceiverEmail(),
-                        "Looking for blood",
-                        MailUtils.buildHtmlBody(
-                                donorName,
+                        searchRequest.getReceiverEmail(), "Looking for blood", MailUtils.buildHtmlBody(donorName,
                                 searchRequest.getLocation().toString(),
                                 searchRequest.getReceiverPhone(),
-                                "DREAM"
-                        ));
+                                "DREAM"));
                 mailRequest.setHtmlContent(true);
                 mailService.sendMail(mailRequest);
             } else {
