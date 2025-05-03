@@ -54,6 +54,7 @@ public class MailServiceImpl implements MailService{
             }
 
             mailSender.send(mimeMessage);
+            log.info("Mail sent successfully...............");
         } catch (MessagingException e) {
             log.error("Error sending email : {}",e.getCause());
             e.printStackTrace();
