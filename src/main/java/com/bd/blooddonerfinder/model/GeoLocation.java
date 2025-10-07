@@ -9,7 +9,7 @@ import java.io.Serializable;
 @Embeddable
 @Data
 @NoArgsConstructor
-public class Location implements Serializable {
+public class GeoLocation implements Serializable {
     private String address;
     private String city;
     private String district;

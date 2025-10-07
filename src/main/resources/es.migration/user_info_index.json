@@ -1,0 +1,65 @@
+{
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "text"
+      },
+      "email": {
+        "type": "keyword"
+      },
+      "phone": {
+        "type": "keyword"
+      },
+      "bloodGroup": {
+        "type": "keyword"
+      },
+      "role": {
+        "type": "keyword"
+      },
+      "isVerified": {
+        "type": "boolean"
+      },
+      "isAvailable": {
+        "type": "boolean"
+      },
+      "lastDonationDate": {
+        "type": "date",
+        "format": "dd/MM/yyyy||yyyy/MM/dd||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis"
+      },
+      "location": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "text"
+          },
+          "city": {
+            "type": "keyword"
+          },
+          "district": {
+            "type": "keyword"
+          },
+          "latitude": {
+            "type": "double"
+          },
+          "longitude": {
+            "type": "double"
+          },
+          "zipcode": {
+            "type": "keyword"
+          }
+        }
+      },
+      "createdAt": {
+        "type": "date",
+        "format": "dd/MM/yyyy||yyyy/MM/dd||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis"
+      },
+      "updatedAt": {
+        "type": "date",
+        "format": "dd/MM/yyyy||yyyy/MM/dd||yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis"
+      }
+    }
+  }
+}

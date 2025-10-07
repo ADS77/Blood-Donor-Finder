@@ -26,7 +26,7 @@ public class NotificationManagerImpl implements NotificationManager {
                 SendMailRequest mailRequest = new SendMailRequest(
                         donor.getEmail(),
                         searchRequest.getReceiverEmail(), "Looking for blood", MailUtils.buildHtmlBody(donorName,
-                                searchRequest.getLocation().toString(),
+                                searchRequest.getGeoLocation().toString(),
                                 searchRequest.getReceiverPhone(),
                                 "DREAM"));
                 mailRequest.setHtmlContent(true);
