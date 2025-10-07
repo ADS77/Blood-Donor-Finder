@@ -1,6 +1,6 @@
 # 🩸 Blood Donor Finder
 
-A RESTful backend API built with **Spring Boot** to streamline the process of finding **nearby blood donors** and handling **urgent blood requests**. The system supports location-based search, user roles (admin/donor/receiver), and real-time SMS notifications to available donors.
+A RESTful backend API built with **Spring Boot** to streamline the process of finding **nearby blood donors** and handling **urgent blood requests**. The system supports geoLocation-based search, user roles (admin/donor/receiver), and real-time SMS notifications to available donors.
 
 ---
 

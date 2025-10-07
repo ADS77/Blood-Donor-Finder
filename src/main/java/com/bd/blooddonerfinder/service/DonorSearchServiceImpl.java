@@ -1,6 +1,6 @@
 package com.bd.blooddonerfinder.service;
 
-import com.bd.blooddonerfinder.model.Location;
+import com.bd.blooddonerfinder.model.GeoLocation;
 import com.bd.blooddonerfinder.model.User;
 import com.bd.blooddonerfinder.model.enums.Role;
 import com.bd.blooddonerfinder.payload.request.DonorSearchRequest;
@@ -27,15 +27,15 @@ public class DonorSearchServiceImpl implements DonorSearchService{
         List<User> allDonors = userRepository.findNearByRoleAndBloodGroup(Role.DONOR, searchRequest.getBloodGroup());
         List<User> nearByDonors = new ArrayList<>();
         for(User user : allDonors){
-            Location location = user.getLocation();
-            if (location == null || location.getLatitude() == null || location.getLongitude() == null){
+            GeoLocation geoLocation = user.getGeoLocation();
+            if (geoLocation == null || geoLocation.getLatitude() == null || geoLocation.getLongitude() == null){
                 continue;
             }
             double distance = GeoUtils.haversine(
-                    searchRequest.getLocation().getLatitude(),
-                    location.getLatitude(),
-                    searchRequest.getLocation().getLongitude(),
-                    location.getLongitude());
+                    searchRequest.getGeoLocation().getLatitude(),
+                    geoLocation.getLatitude(),
+                    searchRequest.getGeoLocation().getLongitude(),
+                    geoLocation.getLongitude());
             if(distance <= searchRequest.getRadius()){
                 nearByDonors.add(user);
             }

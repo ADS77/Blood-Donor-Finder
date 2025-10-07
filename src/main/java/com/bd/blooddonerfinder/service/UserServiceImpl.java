@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -54,7 +53,7 @@ public class UserServiceImpl implements UserService{
                     registrationRequest.getPhone(),
                     registrationRequest.getBloodGroup(),
                     registrationRequest.getRole(),
-                    registrationRequest.getLocation()
+                    registrationRequest.getGeoLocation()
             );
 
             newUser.setCreatedAt(LocalDateTime.now());

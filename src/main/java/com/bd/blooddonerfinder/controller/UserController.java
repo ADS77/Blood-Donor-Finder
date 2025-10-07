@@ -46,7 +46,7 @@ public class UserController {
             existingUser.setName(updatedUser.getName());
             existingUser.setRole(updatedUser.getRole());
             existingUser.setBloodGroup(updatedUser.getBloodGroup());
-            existingUser.setLocation(updatedUser.getLocation());
+            existingUser.setGeoLocation(updatedUser.getGeoLocation());
             existingUser.setLastDonationDate(updatedUser.getLastDonationDate());
             userRepository.save(existingUser);
             return ResponseEntity.ok().body("user updated");
