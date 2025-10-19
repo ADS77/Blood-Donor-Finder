@@ -2,17 +2,19 @@ package com.bd.blooddonerfinder.model.es.QueryModel;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import com.bd.blooddonerfinder.model.common.SearchCriteria;
+import com.bd.blooddonerfinder.model.es.common.SearchCriteria;
 import com.bd.blooddonerfinder.util.ElasticQueryUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 @Data
 @Getter
+@Setter
 public class UserQueryModel implements Serializable {
     private SearchCriteria id;
     private SearchCriteria name;
@@ -79,37 +81,47 @@ public class UserQueryModel implements Serializable {
     }
 
     @JsonIgnore
-    public static Query userQueryModelBuilder(UserQueryModel queryModel){
-        BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
-        if(queryModel.getId() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getId(),"id", false));
-        }
-        if(queryModel.getName() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getName(),"name", false));
-        }
-        if(queryModel.getPhone() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getPhone(),"phone", false));
-        }
-        if(queryModel.getBloodGroup() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getBloodGroup(),"bloodGroup", false));
-        }
-        if(queryModel.getEmail() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getEmail(),"email", true));
-        }
-        if(queryModel.getIsAvailable() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getIsAvailable(),"isAvailable", false));
-        }
-        if(queryModel.getIsVerified() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getIsVerified(),"isVerified", false));
-        }
-        if(queryModel.getLastDonationDate() != null){
-            boolQueryBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getLastDonationDate(),"lastDonationDate", false));
-        }
-        if(queryModel.getLocationQueryModel() != null){
-            LocationQueryModel.LocationQueryModelBuilder("location".concat("."), queryModel.locationQueryModel);
-        }
-        return  boolQueryBuilder.build()._toQuery();
-    }
+    public static Query userQueryModelBuilder(UserQueryModel queryModel) {
+        BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
 
+        if (queryModel.getId() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getId(), "id", false));
+        }
+        if (queryModel.getName() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getName(), "name", true));
+        }
+        if (queryModel.getPhone() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getPhone(), "phone", false));
+        }
+        if (queryModel.getBloodGroup() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getBloodGroup(), "bloodGroup", false));
+        }
+        if (queryModel.getEmail() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getEmail(), "email", true));
+        }
+        if (queryModel.getRole() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getRole(), "role", true));
+        }
+        if (queryModel.getIsVerified() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getIsVerified(), "isVerified", false));
+        }
+        if (queryModel.getIsAvailable() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getIsAvailable(), "isAvailable", false));
+        }
+        if (queryModel.getLastDonationDate() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getLastDonationDate(), "lastDonationDate", false));
+        }
+        if (queryModel.getCreatedAt() != null) {
+            boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getCreatedAt(), "createdAt", false));
+        }
+
+        // ✅ Handle nested location query
+        if (queryModel.getLocationQueryModel() != null) {
+            Query locationQuery = LocationQueryModel.LocationQueryModelBuilder("location.", queryModel.getLocationQueryModel());
+            boolBuilder.must(locationQuery);
+        }
+
+        return new Query.Builder().bool(boolBuilder.build()).build();
+    }
 
 }

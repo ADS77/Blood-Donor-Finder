@@ -1,4 +1,4 @@
-package com.bd.blooddonerfinder.model.common;
+package com.bd.blooddonerfinder.model.es.common;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +15,7 @@ public class SearchCriteria implements Serializable {
     private List<SearchRange> ranges;
     private SearchType searchType;
     private String fieldId;
+    private FieldType fieldType;
     public SearchCriteria(List<String> values, SearchType searchType){
         this.values = values;
         this.searchType = searchType;

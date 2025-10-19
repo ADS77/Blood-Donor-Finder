@@ -4,12 +4,14 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+//@EnableElasticsearchRepositories(basePackages = "com.bd.blooddonerfinder.model.es.documents")
 public class ElasticSearchConfig {
     @Bean
     public ElasticsearchClient elasticsearchClient(){
@@ -21,5 +23,10 @@ public class ElasticSearchConfig {
                 new JacksonJsonpMapper()
         );
         return  new co.elastic.clients.elasticsearch.ElasticsearchClient(transport);
+    }
+
+    @Bean
+    public ObjectMapper objectMapper(){
+        return new ObjectMapper();
     }
 }

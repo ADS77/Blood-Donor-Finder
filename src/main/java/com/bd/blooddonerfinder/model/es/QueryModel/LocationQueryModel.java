@@ -2,13 +2,12 @@ package com.bd.blooddonerfinder.model.es.QueryModel;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import com.bd.blooddonerfinder.model.common.SearchCriteria;
+import com.bd.blooddonerfinder.model.es.common.SearchCriteria;
 import com.bd.blooddonerfinder.util.ElasticQueryUtils;
 import lombok.Data;
 import lombok.Getter;
 
 import java.io.Serializable;
-import java.util.List;
 
 @Data
 @Getter
