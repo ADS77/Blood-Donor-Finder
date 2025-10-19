@@ -8,12 +8,14 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Location {
+public class Location implements Serializable {
     @Field(type = FieldType.Keyword)
     private String address;
     @Field(type = FieldType.Keyword)

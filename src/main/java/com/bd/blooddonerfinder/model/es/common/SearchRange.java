@@ -1,4 +1,4 @@
-package com.bd.blooddonerfinder.model.common;
+package com.bd.blooddonerfinder.model.es.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

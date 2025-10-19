@@ -21,8 +21,8 @@ import java.io.Serializable;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Document(createIndex = false, indexName = "donor_info_index")
-public class UserDocument implements Serializable {
+@Document(createIndex = false, indexName = "user_search_index")
+public class UserSearchDocument implements Serializable {
 
     @Id
     private String id;
@@ -60,9 +60,9 @@ public class UserDocument implements Serializable {
     @Field(type = FieldType.Keyword)
     private String updatedAt;
 
-    public static UserDocument from(User user){
+    public static UserSearchDocument from(User user){
         if(user == null) return null;
-        UserDocument doc = UserDocument.builder()
+        UserSearchDocument doc = UserSearchDocument.builder()
                 .id(user.getId().toString())
                 .name(user.getName())
                 .email(user.getEmail())

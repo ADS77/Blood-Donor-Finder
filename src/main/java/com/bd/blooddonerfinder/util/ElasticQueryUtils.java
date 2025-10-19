@@ -1,120 +1,265 @@
 package com.bd.blooddonerfinder.util;
 
 
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
-import co.elastic.clients.json.JsonData;
-import com.bd.blooddonerfinder.model.common.SearchCriteria;
-import com.bd.blooddonerfinder.model.common.SearchRange;
-import com.bd.blooddonerfinder.model.common.SearchType;
+import com.bd.blooddonerfinder.model.es.common.FieldType;
+import com.bd.blooddonerfinder.model.es.common.SearchCriteria;
+import com.bd.blooddonerfinder.model.es.common.SearchRange;
+import com.bd.blooddonerfinder.model.es.common.SearchType;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
+@Slf4j
 public class ElasticQueryUtils {
-    private static final String EXACT_SUFFIX = "keyword";
-    private static final String BETWEEN_PREFIX = "prefix";
-    private static final String BETWEEN_FROM = "from";
-    private static final String BETWEEN_TO = "to";
-
 
     public static Query getFieldQueryBuilder(SearchCriteria criteria, String fieldName, boolean isAnalyzedField) {
-        BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
+        List<Query> shouldQueries = new ArrayList<>();
         SearchType searchType = criteria.getSearchType();
 
-        if (searchType == SearchType.masked) {
-            if (isAnalyzedField) {
-                fieldName = fieldName + "." + EXACT_SUFFIX;
-            }
-            String finalFieldName = fieldName;
-            for (String pattern : criteria.getPatterns()) {
-                queryBuilder.should(q -> q.regexp(r -> r
-                        .field(finalFieldName)
-                        .value(pattern)));
-            }
+        switch (searchType) {
+            case masked:
+                shouldQueries.addAll(buildMaskedQuery(criteria, fieldName, isAnalyzedField));
+                break;
+            case range:
+                shouldQueries.addAll(buildRangeQuery(criteria, fieldName));
+                break;
+            case exact:
+                shouldQueries.addAll(buildExactQuery(criteria, fieldName, isAnalyzedField));
+                break;
+            case partial:
+                shouldQueries.addAll(buildPartialQuery(criteria, fieldName));
+                break;
+            case phrase:
+                shouldQueries.addAll(buildPhraseQuery(criteria, fieldName));
+                break;
+            case between:
+                shouldQueries.addAll(buildBetweenQuery(criteria, fieldName));
+                break;
+            case lessThan:
+                shouldQueries.add(buildLessThanQuery(criteria, fieldName));
+                break;
+        }
 
-        } else if (searchType == SearchType.range) {
-            String finalFieldName = fieldName;
-            for (SearchRange range : criteria.getRanges()) {
-                queryBuilder.should(q -> q.range(r -> r
-                        .field(finalFieldName)
-                        .gte(JsonData.of(range.getMin()))
-                        .lte(JsonData.of(range.getMax()))));
-            }
+        return Query.of(q -> q.bool(b -> b.should(shouldQueries)));
+    }
 
-        } else if (searchType == SearchType.exact) {
-            if (isAnalyzedField) {
-                fieldName = fieldName + "." + EXACT_SUFFIX;
-            }
-            String finalFieldName = fieldName;
-            for (String value : criteria.getValues()) {
-                queryBuilder.should(q -> q.term(t -> t
-                        .field(finalFieldName)
-                        .value(FieldValue.of(value))));
-            }
+    private static List<Query> buildMaskedQuery(SearchCriteria criteria, String fieldName, boolean isAnalyzedField) {
+        List<Query> queries = new ArrayList<>();
+        String finalFieldName = isAnalyzedField ? fieldName + ".keyword" : fieldName;
 
-        } else if (searchType == SearchType.partial) {
-            String finalFieldName = fieldName;
-            for (String value : criteria.getValues()) {
-                queryBuilder.should(q -> q.match(m -> m
-                        .field(finalFieldName)
-                        .query(value)
-                        .operator(Operator.And)));
-            }
+        for (String pattern : criteria.getPatterns()) {
+            queries.add(Query.of(q -> q.regexp(r -> r
+                    .field(finalFieldName)
+                    .value(pattern)
+            )));
+        }
+        return queries;
+    }
 
-        } else if (searchType == SearchType.phrase) {
-            String finalFieldName = fieldName;
-            for (String value : criteria.getValues()) {
-                queryBuilder.should(q -> q.matchPhrase(mp -> mp
-                        .field(finalFieldName)
-                        .query(value)
-                        .slop(2)));
-            }
+    private static List<Query> buildRangeQuery(SearchCriteria criteria, String fieldName) {
+        List<Query> queries = new ArrayList<>();
 
-        } else if (searchType == SearchType.between) {
-            String finalFieldName = fieldName;
-            for (SearchRange range : criteria.getRanges()) {
-                String[] from = range.getMin().split(" ");
-                String[] to = range.getMax().split(" ");
-                if (from.length == 2 && to.length == 2 && from[0].equals(to[0])) {
-                    String prefix = from[0];
+        for (SearchRange range : criteria.getRanges()) {
+            Query query = switch (criteria.getFieldType()) {
+                case NUMBER -> Query.of(q -> q.range(r -> r
+                        .number(n -> n
+                                .field(fieldName)
+                                .gte(Double.parseDouble(range.getMin()))
+                                .lte(Double.parseDouble(range.getMax()))
+                        )
+                ));
+                case DATE -> Query.of(q -> q.range(r -> r
+                        .date(d -> d
+                                .field(fieldName)
+                                .gte(range.getMin())
+                                .lte(range.getMax())
+                        )
+                ));
+                case KEYWORD, TEXT -> Query.of(q -> q.range(r -> r
+                        .term(t -> t
+                                .field(fieldName)
+                                .gte(range.getMin())
+                                .lte(range.getMax())
+                        )
+                ));
+            };
+            queries.add(query);
+        }
+        return queries;
+    }
+
+    private static List<Query> buildExactQuery(SearchCriteria criteria, String fieldName, boolean isAnalyzedField) {
+        List<Query> queries = new ArrayList<>();
+        String finalFieldName = isAnalyzedField ? fieldName + ".keyword" : fieldName;
+
+        for (String value : criteria.getValues()) {
+            queries.add(Query.of(q -> q.term(t -> t
+                    .field(finalFieldName)
+                    .value(value)
+            )));
+        }
+        return queries;
+    }
+
+    private static List<Query> buildPartialQuery(SearchCriteria criteria, String fieldName) {
+        List<Query> queries = new ArrayList<>();
+
+        for (String value : criteria.getValues()) {
+            queries.add(Query.of(q -> q.match(m -> m
+                    .field(fieldName)
+                    .query(value)
+                    .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)
+            )));
+        }
+        return queries;
+    }
+
+    private static List<Query> buildPhraseQuery(SearchCriteria criteria, String fieldName) {
+        List<Query> queries = new ArrayList<>();
+
+        for (String value : criteria.getValues()) {
+            queries.add(Query.of(q -> q.matchPhrase(mp -> mp
+                    .field(fieldName)
+                    .query(value)
+                    .slop(2)
+            )));
+        }
+        return queries;
+    }
+
+    private static List<Query> buildBetweenQuery(SearchCriteria criteria, String fieldName) {
+        List<Query> queries = new ArrayList<>();
+
+        for (SearchRange range : criteria.getRanges()) {
+            String[] from = range.getMin().split(" ");
+            String[] to = range.getMax().split(" ");
+
+            if (from.length == 2 && to.length == 2 && from[0].equals(to[0])) {
+                String prefix = from[0];
+
+                try {
                     long fromNum = Long.parseLong(from[1]);
                     long toNum = Long.parseLong(to[1]);
 
                     if (fromNum <= toNum) {
-                        queryBuilder.should(q -> q.bool(bq -> bq
-                                .must(mq -> mq.term(tq -> tq
-                                        .field(finalFieldName + "." + BETWEEN_PREFIX)
-                                        .value(FieldValue.of(prefix))))
-                                .must(mq -> mq.range(rq -> rq
-                                        .field(finalFieldName + "." + BETWEEN_FROM)
-                                        .lte(JsonData.of(fromNum))))
-                                .must(mq -> mq.range(rq -> rq
-                                        .field(finalFieldName + "." + BETWEEN_TO)
-                                        .gte(JsonData.of(toNum))))));
+                        FieldType rangeFieldType = criteria.getFieldType() != null ?
+                                criteria.getFieldType() : FieldType.NUMBER;
+
+                        Query betweenQuery = buildBetweenQueryByType(
+                                fieldName, prefix, fromNum, toNum, rangeFieldType
+                        );
+                        queries.add(betweenQuery);
                     }
+                } catch (NumberFormatException e) {
+                    log.error("Invalid number format in between query for field: {}, range: {} - {}",
+                            fieldName, range.getMin(), range.getMax(), e);
+                }
+            }
+        }
+        return queries;
+    }
+
+    private static Query buildBetweenQueryByType(String fieldName, String prefix,
+                                                 long fromNum, long toNum,
+                                                 FieldType fieldType) {
+        return switch (fieldType) {
+            case NUMBER -> Query.of(q -> q.bool(b -> b
+                    .must(m -> m.term(t -> t
+                            .field(fieldName + ".prefix")
+                            .value(prefix)
+                    ))
+                    .must(m -> m.range(r -> r
+                            .number(n -> n
+                                    .field(fieldName + ".from")
+                                    .lte((double) fromNum)
+                            )
+                    ))
+                    .must(m -> m.range(r -> r
+                            .number(n -> n
+                                    .field(fieldName + ".to")
+                                    .gte((double) toNum)
+                            )
+                    ))
+            ));
+
+            case DATE -> Query.of(q -> q.bool(b -> b
+                    .must(m -> m.term(t -> t
+                            .field(fieldName + ".prefix")
+                            .value(prefix)
+                    ))
+                    .must(m -> m.range(r -> r
+                            .date(d -> d
+                                    .field(fieldName + ".from")
+                                    .lte(String.valueOf(fromNum))
+                            )
+                    ))
+                    .must(m -> m.range(r -> r
+                            .date(d -> d
+                                    .field(fieldName + ".to")
+                                    .gte(String.valueOf(toNum))
+                            )
+                    ))
+            ));
+
+            default -> Query.of(q -> q.bool(b -> b
+                    .must(m -> m.term(t -> t
+                            .field(fieldName + ".prefix")
+                            .value(prefix)
+                    ))
+                    .must(m -> m.range(r -> r
+                            .term(t -> t
+                                    .field(fieldName + ".from")
+                                    .lte(String.valueOf(fromNum))
+                            )
+                    ))
+                    .must(m -> m.range(r -> r
+                            .term(t -> t
+                                    .field(fieldName + ".to")
+                                    .gte(String.valueOf(toNum))
+                            )
+                    ))
+            ));
+        };
+    }
+    private static Query buildLessThanQuery(SearchCriteria criteria, String fieldName) {
+        String value = criteria.getValues().get(0);
+        FieldType fieldType = criteria.getFieldType();
+        return switch (fieldType) {
+            case NUMBER -> {
+                try {
+                    double numValue = Double.parseDouble(value);
+                    yield Query.of(q -> q.range(r -> r
+                            .number(n -> n
+                                    .field(fieldName)
+                                    .lt(numValue)
+                            )
+                    ));
+                } catch (NumberFormatException e) {
+                    log.warn("Failed to parse '{}' as number, falling back to term query", value);
+                    yield Query.of(q -> q.range(r -> r
+                            .term(t -> t
+                                    .field(fieldName)
+                                    .lt(value)
+                            )
+                    ));
                 }
             }
 
-        } else if (searchType == SearchType.wildcard) {
-            String finalFieldName = fieldName;
-            for (String value : criteria.getValues()) {
-                queryBuilder.should(q -> q.term(t -> t
-                        .field(finalFieldName)
-                        .value(FieldValue.of(value))));
-                queryBuilder.should(q -> q.wildcard(w -> w
-                        .field(finalFieldName)
-                        .value(value + "*")));
-                queryBuilder.should(q -> q.fuzzy(f -> f
-                        .field(finalFieldName)
-                        .value(value)
-                        .fuzziness("1")
-                        .boost(0.1f)));
-            }
-        }
+            case DATE -> Query.of(q -> q.range(r -> r
+                    .date(d -> d
+                            .field(fieldName)
+                            .lt(value)
+                    )
+            ));
 
-        return queryBuilder.build()._toQuery();
+            default -> Query.of(q -> q.range(r -> r
+                    .term(t -> t
+                            .field(fieldName)
+                            .lt(value)
+                    )
+            ));
+        };
     }
-
 
 }
