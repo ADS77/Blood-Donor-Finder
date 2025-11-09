@@ -1,5 +1,6 @@
 package com.bd.blooddonerfinder.repository;
 
+import com.bd.blooddonerfinder.model.GeoLocation;
 import com.bd.blooddonerfinder.model.User;
 import com.bd.blooddonerfinder.model.enums.BloodGroup;
 import com.bd.blooddonerfinder.model.enums.Role;
@@ -16,6 +17,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhone(String phone);
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
-    List<User> findNearByRoleAndBloodGroup(Role role, BloodGroup bloodGroup);
+    List<User> findNearByRoleAndBloodGroupAndGeoLocationCity(Role role, BloodGroup bloodGroup, String city);
 
 }

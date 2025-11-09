@@ -41,7 +41,11 @@ public class DonorSearchServiceImpl implements DonorSearchService{
     @Override
     public List<User> findNearByDonors(@Valid DonorSearchRequest searchRequest) {
         log.info("Searching donors nearby :{}", searchRequest.getGeoLocation().getCity());
-        List<User> allDonors = userRepository.findNearByRoleAndBloodGroup(Role.DONOR, searchRequest.getBloodGroup());
+        List<User> allDonors = userRepository.findNearByRoleAndBloodGroupAndGeoLocationCity(Role.DONOR,
+                searchRequest.getBloodGroup(),
+                searchRequest.getGeoLocation().getCity());
+        log.info("Found {} nearby donors in {}", allDonors.size(), searchRequest.getGeoLocation().getCity());
+
         if(searchRequest.getGeoLocation().getLatitude() == null || searchRequest.getGeoLocation().getLongitude() == null){
             GeoResponse requesterGeo = geoLocationService.getLatLong(searchRequest.getGeoLocation().getCity());
             searchRequest.getGeoLocation().setLatitude(Double.parseDouble(requesterGeo.getLatitude()));

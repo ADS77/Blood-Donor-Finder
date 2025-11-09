@@ -57,7 +57,6 @@ public class GeoLocationService {
             if (root.isArray() && root.size() > 0) {
                 log.info("Geolocation found for city : {}", city);
                 JsonNode node = root.get(0);
-                log.info("");
                 return new GeoResponse(
                         node.get("lat").asText(),
                         node.get("lon").asText(),

@@ -34,8 +34,10 @@ public class User {
     private Boolean isVerified;
     private Boolean isAvailable;
     private LocalDateTime lastDonationDate;
-    private Double rating;
-    private Long totalDonations;
+    @Column(columnDefinition = "DOUBLE DEFAULT 0.0")
+    private Double rating = 0.0;
+    @Column(columnDefinition = "BIGINT DEFAULT 0")
+    private Long totalDonations = 0L;
     private String imageUrl;
 
     @Embedded
