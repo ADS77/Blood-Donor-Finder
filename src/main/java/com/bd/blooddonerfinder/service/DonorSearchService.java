@@ -10,4 +10,5 @@ import java.util.List;
 
 public interface DonorSearchService {
     List<User> findNearByDonors (DonorSearchRequest searchRequest);
+    List<User> findNearByEligibleDonors(DonorSearchRequest searchRequest);
 }

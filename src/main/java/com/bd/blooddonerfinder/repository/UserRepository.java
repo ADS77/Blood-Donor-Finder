@@ -16,6 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByPhone(String phone);
     boolean existsByEmail(String email);
     boolean existsByPhone(String phone);
-    List<User> findNearByRoleAndBloodGroup(Role role, BloodGroup group);
+    List<User> findNearByRoleAndBloodGroup(Role role, BloodGroup bloodGroup);
 
 }

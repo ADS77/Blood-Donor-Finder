@@ -7,10 +7,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableAsync
-public class BloodDonerFinderApplication {
+public class BloodDonorFinderApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(BloodDonerFinderApplication.class, args);
+        SpringApplication.run(BloodDonorFinderApplication.class, args);
     }
 
 }

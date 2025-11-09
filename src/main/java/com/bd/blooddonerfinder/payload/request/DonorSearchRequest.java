@@ -7,11 +7,13 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
 @ToString
 @EqualsAndHashCode
-public class DonorSearchRequest {
+public class DonorSearchRequest implements Serializable {
     private GeoLocation geoLocation;
     private BloodGroup bloodGroup;
     private double radius;

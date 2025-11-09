@@ -12,8 +12,6 @@ public class MailUtils {
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@"
                     + "[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$");
-    @Value("${min.days.between.donation}")
-    private static int MIN_GAP_DAYS;
 
     public static boolean isValidEmail(String email){
         if(email == null || email.isBlank()){
@@ -51,14 +49,7 @@ public class MailUtils {
             return value == null || value.trim().isEmpty() ? defaultValue : value;
     }
 
-    public static List<User> filterEligibleDonors(List<User> donorList){
-        LocalDate today = LocalDate.now();
-        return donorList.stream()
-                .filter(donor -> donor.getLastDonationDate() == null ||
-                        donor.getLastDonationDate().isBefore(
-                                today.minusDays(MIN_GAP_DAYS)))
-                .collect(Collectors.toList());
-    }
+
 
 
 

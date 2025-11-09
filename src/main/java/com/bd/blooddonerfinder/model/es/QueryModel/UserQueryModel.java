@@ -114,8 +114,6 @@ public class UserQueryModel implements Serializable {
         if (queryModel.getCreatedAt() != null) {
             boolBuilder.must(ElasticQueryUtils.getFieldQueryBuilder(queryModel.getCreatedAt(), "createdAt", false));
         }
-
-        // ✅ Handle nested location query
         if (queryModel.getLocationQueryModel() != null) {
             Query locationQuery = LocationQueryModel.LocationQueryModelBuilder("location.", queryModel.getLocationQueryModel());
             boolBuilder.must(locationQuery);

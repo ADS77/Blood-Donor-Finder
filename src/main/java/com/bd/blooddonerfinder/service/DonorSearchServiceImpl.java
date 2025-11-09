@@ -5,6 +5,7 @@ import com.bd.blooddonerfinder.model.User;
 import com.bd.blooddonerfinder.model.enums.Role;
 import com.bd.blooddonerfinder.payload.request.DonorSearchRequest;
 import com.bd.blooddonerfinder.repository.UserRepository;
+import com.bd.blooddonerfinder.util.DonorUtils;
 import com.bd.blooddonerfinder.util.GeoUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,5 +43,13 @@ public class DonorSearchServiceImpl implements DonorSearchService{
         }
         return nearByDonors;
     }
+
+    @Override
+    public List<User> findNearByEligibleDonors(DonorSearchRequest searchRequest) {
+        List<User> nearByDonors = findNearByDonors(searchRequest);
+        List<User> eligibleDonors = DonorUtils.filterEligibleDonors(nearByDonors);
+        return eligibleDonors;
+    }
+
 
 }

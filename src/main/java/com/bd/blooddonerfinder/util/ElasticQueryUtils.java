@@ -40,7 +40,6 @@ public class ElasticQueryUtils {
                 shouldQueries.add(buildLessThanQuery(criteria, fieldName));
                 break;
         }
-
         return Query.of(q -> q.bool(b -> b.should(shouldQueries)));
     }
 

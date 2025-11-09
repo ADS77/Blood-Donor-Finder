@@ -2,6 +2,7 @@ package com.bd.blooddonerfinder.model;
 
 import com.bd.blooddonerfinder.model.enums.BloodGroup;
 import com.bd.blooddonerfinder.model.enums.Role;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -26,19 +27,23 @@ public class User {
     @Column(unique = true, nullable = false)
     private String phone;
     @Enumerated(EnumType.STRING)
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private BloodGroup bloodGroup;
     @Enumerated(EnumType.STRING)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Role role;
     private Boolean isVerified;
     private Boolean isAvailable;
-    private LocalDate lastDonationDate;
+    private LocalDateTime lastDonationDate;
+    private Double rating;
+    private Long totalDonations;
+    private String imageUrl;
 
     @Embedded
     private GeoLocation geoLocation;
 
+    @JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+    @JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 
     public User(String name, String email, String phone, BloodGroup bloodGroup, Role role, GeoLocation geoLocation) {

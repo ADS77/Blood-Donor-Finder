@@ -83,7 +83,7 @@ public class DonorListConsumer {
           futures.add(future);
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        log.debug("Completed sending {} email notification fro blood group:{}",
+        log.debug("Completed sending {} email notification for blood group:{}",
                 eligibleDonors.size(),
                 searchRequest.getBloodGroup() != null ? searchRequest.getBloodGroup().getDisplayName() : "UNKNOWN");
     }

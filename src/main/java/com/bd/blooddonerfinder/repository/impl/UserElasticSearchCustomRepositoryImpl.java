@@ -47,7 +47,7 @@ public class UserElasticSearchCustomRepositoryImpl implements UserElasticSearchC
 
     @Override
     public ListResponse<UserSearchDocument> queryForPage(UserSearchParams searchParams) {
-        log.debug("search in elastic for user starts");
+        log.debug("search in elastic for user starts...");
         ListResponse<UserSearchDocument> response = new ListResponse<>();
         List<UserSearchDocument> userList = new ArrayList<>();
         BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();

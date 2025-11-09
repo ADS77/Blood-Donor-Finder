@@ -1,18 +1,18 @@
 package com.bd.blooddonerfinder.controller;
 
 import com.bd.blooddonerfinder.model.User;
+import com.bd.blooddonerfinder.model.common.ListResponse;
 import com.bd.blooddonerfinder.payload.request.DonorSearchRequest;
 import com.bd.blooddonerfinder.payload.response.RestApiResponse;
 import com.bd.blooddonerfinder.service.DonorSearchService;
 import com.bd.blooddonerfinder.service.NotificationManager;
-import com.bd.blooddonerfinder.util.MailUtils;
+import com.bd.blooddonerfinder.util.DonorUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StopWatch;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -27,11 +27,30 @@ public class DonorSearchController {
         this.donorSearchService = donorSearchService;
         this.notificationManager = notificationManager;
     }
+
+    @PostMapping("/eligible-donors")
+    public ResponseEntity<RestApiResponse<ListResponse<User>>> getEligibleDonors(@RequestBody DonorSearchRequest donorSearchRequest){
+        if (donorSearchRequest.getRadius() <= 0){
+            donorSearchRequest.setRadius(RADIUS);
+        }
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        List<User> eligibleDonors = donorSearchService.findNearByEligibleDonors(donorSearchRequest);
+        stopWatch.stop();
+        log.info("Eligible Donor List : {}", eligibleDonors);
+        ListResponse<User> eligibleDonorList = new ListResponse<>();
+        eligibleDonorList.setData(eligibleDonors);
+        eligibleDonorList.setTime(stopWatch.getTotalTimeMillis());
+        eligibleDonorList.setCount(eligibleDonors.size());
+        RestApiResponse<ListResponse<User>> apiResponse = new RestApiResponse<>();
+        apiResponse.setData(eligibleDonorList);
+        return ResponseEntity.ok().body(apiResponse);
+    }
     @GetMapping("/notify-near-by-donors")
     public ResponseEntity<RestApiResponse<List<User>>> NotifyNearByDonorsByEmail(@RequestBody DonorSearchRequest donorSearchRequest){
         if(donorSearchRequest.getRadius() <= 0) donorSearchRequest.setRadius(RADIUS);
         List<User> nearByUserList = donorSearchService.findNearByDonors(donorSearchRequest);
-        List<User> eligibleDonors = MailUtils.filterEligibleDonors(nearByUserList);
+        List<User> eligibleDonors = DonorUtils.filterEligibleDonors(nearByUserList);
         notificationManager.notifyByMail(eligibleDonors, donorSearchRequest);
         log.debug("eligibleDonors : {}", nearByUserList);
         return ResponseEntity
