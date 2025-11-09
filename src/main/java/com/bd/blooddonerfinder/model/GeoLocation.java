@@ -1,6 +1,7 @@
 package com.bd.blooddonerfinder.model;
 
 import jakarta.persistence.Embeddable;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class GeoLocation implements Serializable {
     private String address;
+    @NotNull
     private String city;
     private String district;
     private Double latitude;
