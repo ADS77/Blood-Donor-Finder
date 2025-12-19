@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +49,8 @@ public class DonorSearchServiceImpl implements DonorSearchService{
 
         if(searchRequest.getGeoLocation().getLatitude() == null || searchRequest.getGeoLocation().getLongitude() == null){
             GeoResponse requesterGeo = geoLocationService.getLatLong(searchRequest.getGeoLocation().getCity());
-            searchRequest.getGeoLocation().setLatitude(Double.parseDouble(requesterGeo.getLatitude()));
-            searchRequest.getGeoLocation().setLongitude(Double.parseDouble(requesterGeo.getLongitude()));
+            searchRequest.getGeoLocation().setLatitude((requesterGeo.getLatitude()));
+            searchRequest.getGeoLocation().setLongitude(requesterGeo.getLongitude());
         }
         Map<Boolean, List<User>> partitioned = allDonors.stream()
                 .collect(Collectors.partitioningBy(
@@ -66,8 +67,8 @@ public class DonorSearchServiceImpl implements DonorSearchService{
                         GeoResponse geo = geoLocationService.getLatLong(
                                 donor.getGeoLocation().getCity()
                         );
-                        donor.getGeoLocation().setLatitude(Double.parseDouble(geo.getLatitude()));
-                        donor.getGeoLocation().setLongitude(Double.parseDouble(geo.getLongitude()));
+                        donor.getGeoLocation().setLatitude(geo.getLatitude());
+                        donor.getGeoLocation().setLongitude(geo.getLongitude());
                         userRepository.save(donor);
                         return donor;
                     } catch (Exception e) {
@@ -98,10 +99,10 @@ public class DonorSearchServiceImpl implements DonorSearchService{
                         return false;
                     }
                     double distance = GeoUtils.haversine(
-                            searchRequest.getGeoLocation().getLatitude(),
-                            geoLocation.getLatitude(),
-                            searchRequest.getGeoLocation().getLongitude(),
-                            geoLocation.getLongitude()
+                            GeoUtils.sanitizeGeoUnit(searchRequest.getGeoLocation().getLatitude()),
+                            GeoUtils.sanitizeGeoUnit(geoLocation.getLatitude()),
+                            GeoUtils.sanitizeGeoUnit(searchRequest.getGeoLocation().getLongitude()),
+                            GeoUtils.sanitizeGeoUnit(geoLocation.getLongitude())
                     );
                     return distance <= searchRequest.getRadius();
                 })

@@ -44,7 +44,7 @@ public class GeoLocationService {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .header("User-Agent", "Sondhan/1.0 (A voluntary project to find blood donors easily)")
+                    .header("User-Agent", "Sondhan/1.0 (A voluntary project team to search nearby blood donors)")
                     .GET()
                     .timeout(TIMEOUT)
                     .build();

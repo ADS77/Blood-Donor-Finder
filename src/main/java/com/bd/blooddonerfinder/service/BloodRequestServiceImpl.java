@@ -34,7 +34,7 @@ public class BloodRequestServiceImpl implements  BloodRequestService{
         if(optionalRequester.isPresent()){
             try {
                 bloodRequest.setRequester(optionalRequester.get());
-                bloodRequest.setNeededGroup(bloodRequestDto.getNeededBloodGroup());
+                bloodRequest.setBloodGroup(bloodRequestDto.getNeededBloodGroup());
                 bloodRequest.setGeoLocation(bloodRequestDto.getGeoLocation());
                 bloodRequest.setRequiredQuantity(bloodRequestDto.getQuantity());
                 bloodRequest.setStatus(RequestStatus.PENDING);

@@ -9,6 +9,7 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -22,8 +23,8 @@ public class Location implements Serializable {
     private String city;
     @Field(type = FieldType.Keyword)
     private String district;
-    private Double latitude;
-    private Double longitude;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     @Field(type = FieldType.Keyword)
     private String zipcode;
 }

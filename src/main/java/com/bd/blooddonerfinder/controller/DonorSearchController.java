@@ -8,6 +8,7 @@ import com.bd.blooddonerfinder.service.DonorSearchService;
 import com.bd.blooddonerfinder.service.NotificationManager;
 import com.bd.blooddonerfinder.util.DonorUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StopWatch;
@@ -19,7 +20,9 @@ import java.util.List;
 @RequestMapping("/api/search")
 @Slf4j
 public class DonorSearchController {
-    private final long RADIUS = 10;
+    //@Value("${default.geo.search.radius}")
+    private String defaultRadius = "30";
+    private Double RADIUS = Double.parseDouble(defaultRadius);
     private final DonorSearchService donorSearchService;
     private final NotificationManager notificationManager;
 
@@ -30,7 +33,7 @@ public class DonorSearchController {
 
     @PostMapping("/eligible-donors")
     public ResponseEntity<RestApiResponse<ListResponse<User>>> getEligibleDonors(@RequestBody DonorSearchRequest donorSearchRequest){
-        if (donorSearchRequest.getRadius() <= 0){
+        if (donorSearchRequest.getRadius() <= 30){
             donorSearchRequest.setRadius(RADIUS);
         }
         StopWatch stopWatch = new StopWatch();

@@ -13,7 +13,7 @@ public class UserRegistrationRequest implements Serializable {
     private String name;
     private String email;
     private String phone;
-    private Role role;
+    //private Role role;
     private BloodGroup bloodGroup;
     private GeoLocation geoLocation;
 }

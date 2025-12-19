@@ -16,8 +16,8 @@ import java.io.Serializable;
 public class DonorSearchRequest implements Serializable {
     private GeoLocation geoLocation;
     private BloodGroup bloodGroup;
-    private double radius;
-    private  String receiverEmail;
+    private Double radius;
+    private String receiverEmail;
     private String receiverPhone;
     private String emergencyLevel;
     private String requestDescription;

@@ -1,5 +1,7 @@
 package com.bd.blooddonerfinder.util;
 
+import java.math.BigDecimal;
+
 public class GeoUtils {
 
     public static double haversine(double lat1, double lat2, double lon1, double lon2){
@@ -13,5 +15,9 @@ public class GeoUtils {
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
+    }
+
+    public static double sanitizeGeoUnit(BigDecimal unit){
+        return Double.parseDouble(String.valueOf(unit));
     }
 }

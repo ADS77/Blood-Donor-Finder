@@ -1,6 +1,7 @@
 package com.bd.blooddonerfinder.service;
 
 import com.bd.blooddonerfinder.model.User;
+import com.bd.blooddonerfinder.model.enums.Role;
 import com.bd.blooddonerfinder.payload.request.UserRegistrationRequest;
 import com.bd.blooddonerfinder.payload.response.RestApiResponse;
 import com.bd.blooddonerfinder.repository.UserRepository;
@@ -52,17 +53,15 @@ public class UserServiceImpl implements UserService{
                     registrationRequest.getEmail(),
                     registrationRequest.getPhone(),
                     registrationRequest.getBloodGroup(),
-                    registrationRequest.getRole(),
+                    Role.DONOR,
                     registrationRequest.getGeoLocation()
             );
-
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setIsVerified(false);
             newUser.setIsAvailable(true);
 
             userRepository.save(newUser);
             log.debug("Registration successful");
-
             apiResponse.setData(newUser);
             apiResponse.setMessage("Registration successful");
             apiResponse.setStatus(HttpStatus.OK);

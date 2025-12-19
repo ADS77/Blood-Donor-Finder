@@ -19,33 +19,39 @@ import java.util.Objects;
 public class User {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     @Column(unique = true, nullable = false)
     private String email;
     @Column(unique = true, nullable = false)
     private String phone;
+    @Column(name = "blood_group")
     @Enumerated(EnumType.STRING)
     private BloodGroup bloodGroup;
     @Enumerated(EnumType.STRING)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(name = "role")
     private Role role;
+    @Column(name = "verified")
     private Boolean isVerified;
+    @Column(name = "is_available")
     private Boolean isAvailable;
+    @Column(name = "last_donation_date")
     private LocalDateTime lastDonationDate;
     @Column(columnDefinition = "DOUBLE DEFAULT 0.0")
     private Double rating = 0.0;
     @Column(columnDefinition = "BIGINT DEFAULT 0")
     private Long totalDonations = 0L;
+    @Column(name = "image_url")
     private String imageUrl;
-
     @Embedded
     private GeoLocation geoLocation;
-
     @JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
     @JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public User(String name, String email, String phone, BloodGroup bloodGroup, Role role, GeoLocation geoLocation) {
@@ -55,6 +61,7 @@ public class User {
         this.bloodGroup = bloodGroup;
         this.role = role;
         this.geoLocation = geoLocation;
+        this.createdAt = LocalDateTime.now();
     }
 
     @Override
