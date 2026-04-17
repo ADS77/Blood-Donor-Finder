@@ -19,6 +19,9 @@
       "role": {
         "type": "keyword"
       },
+      "roles": {
+        "type": "keyword"
+      },
       "isVerified": {
         "type": "boolean"
       },
