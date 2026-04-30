@@ -1,32 +1,37 @@
 package com.bd.blooddonerfinder.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Data
+@Table(name = "donation_history")
 public class DonationHistory {
+
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "donor_id", nullable = false)
+    @JsonIgnoreProperties({"geoLocation", "createdAt", "updatedAt", "hibernateLazyInitializer"})
     private User donor;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipient_id")
+    @JsonIgnoreProperties({"geoLocation", "createdAt", "updatedAt", "hibernateLazyInitializer"})
     private User recipient;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id")
+    @JsonIgnoreProperties({"geoLocation", "hibernateLazyInitializer"})
     private BloodRequest request;
 
     private LocalDateTime donationDate;
     private String notes;
-
     private Boolean verified;
 
 }

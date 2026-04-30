@@ -16,10 +16,11 @@ import java.util.List;
 @Slf4j
 public class DonorSearchServiceImpl implements DonorSearchService{
     private final UserRepository userRepository;
+    private final DonationHistoryService donationHistoryService;
 
-    public DonorSearchServiceImpl(UserRepository userRepository) {
+    public DonorSearchServiceImpl(UserRepository userRepository, DonationHistoryService donationHistoryService) {
         this.userRepository = userRepository;
-
+        this.donationHistoryService = donationHistoryService;
     }
 
     @Override
@@ -27,6 +28,13 @@ public class DonorSearchServiceImpl implements DonorSearchService{
         List<User> allDonors = userRepository.findNearByRoleAndBloodGroup(Role.DONOR, searchRequest.getBloodGroup());
         List<User> nearByDonors = new ArrayList<>();
         for(User user : allDonors){
+            // Check eligibility first
+            if (!donationHistoryService.isEligibleToDonate(user)) {
+                log.debug("Donor {} is not eligible to donate yet (last donation: {})", 
+                        user.getEmail(), user.getLastDonationDate());
+                continue;
+            }
+
             GeoLocation geoLocation = user.getGeoLocation();
             if (geoLocation == null || geoLocation.getLatitude() == null || geoLocation.getLongitude() == null){
                 continue;
