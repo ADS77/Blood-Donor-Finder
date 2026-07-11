@@ -44,7 +44,7 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Login", description = "Authenticate with username and password, receive JWT token pair")
     public ResponseEntity<RestApiResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request) {
-        log.debug("Login attempt for user={}", request.getUsername());
+        log.info("Login attempt for user={}", request.getUsername());
         RestApiResponse<TokenResponse> apiResponse;
         try {
             TokenResponse tokens = authService.login(
@@ -70,7 +70,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @Operation(summary = "registewr", description = "Register user with UserRegistrationRequest")
+    @Operation(summary = "Register user ", description = "Register user with UserRegistrationRequest")
     public ResponseEntity<RestApiResponse<User>> registerUser(@Valid @RequestBody UserRegistrationRequest registrationRequest){
         log.debug("Registering user with username: {}", registrationRequest.getName());
         RestApiResponse<User> apiResponse = userService.registerUser(registrationRequest);
@@ -91,7 +91,8 @@ public class AuthController {
             String message = switch (e.getReason()) {
                 case EXPIRED    -> "Refresh token has expired — please login again";
                 case REVOKED    -> "Refresh token has been revoked — please login again";
-                case WRONG_TYPE -> "Invalid token type — expected a refresh token";
+                case WRONG_TYPE -> "Invalid token type, expected a refresh token";
+                case SIGNATURE_INVALID -> "Refresh token signature verification failed";
                 default         -> "Invalid refresh token";
             };
             apiResponse = Utils.buildErrorRestResponse(HttpStatus.UNAUTHORIZED, "refresh",message);

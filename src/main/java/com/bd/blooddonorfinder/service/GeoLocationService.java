@@ -10,6 +10,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -34,9 +35,14 @@ public class GeoLocationService {
                 .build();
     }
 
-    @Cacheable(value = "geolocations", key = "#city")
+    @Cacheable(
+            value = "geolocations",
+            key = "#city",
+            sync = true
+    )
     public GeoResponse getLatLong(String city){
-        log.info("Searching geo location for city : {}", city);
+        log.info("No geo-location provided, came to search geo location for city : {}", city);
+        GeoResponse geoResponse = new GeoResponse();
         try {
             String url = URL_PREFIX
                     + URLEncoder.encode(city, StandardCharsets.UTF_8)
@@ -50,24 +56,29 @@ public class GeoLocationService {
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
-                throw new GeoLocationException("API returned status: " + response.statusCode());
+                throw new GeoLocationException(
+                        "Failed with status " + response.statusCode()
+                );
             }
 
             JsonNode root = objectMapper.readTree(response.body());
             if (root.isArray() && root.size() > 0) {
                 log.info("Geolocation found for city : {}", city);
                 JsonNode node = root.get(0);
-                return new GeoResponse(
-                        node.get("lat").asText(),
-                        node.get("lon").asText(),
-                        node.get("display_name").asText()
-                );
+                String lat = node.get("lat").asText();
+                String lon = node.get("lon").asText();
+                geoResponse.setSuccess(true);
+                geoResponse.setLatitude(BigDecimal.valueOf(Double.valueOf(lat)));
+                geoResponse.setLongitude(BigDecimal.valueOf(Double.valueOf(lon)));
+                return geoResponse;
             }
-            throw new GeoLocationException("No results found for city: " + city);
-
+            log.error("No geo location result found for city: " + city);
+            return geoResponse;
         } catch (IOException e) {
+            geoResponse.setSuccess(false);
             throw new GeoLocationException("Network error", e);
         } catch (InterruptedException e) {
+            geoResponse.setSuccess(false);
             Thread.currentThread().interrupt();
             throw new GeoLocationException("Request interrupted", e);
         }

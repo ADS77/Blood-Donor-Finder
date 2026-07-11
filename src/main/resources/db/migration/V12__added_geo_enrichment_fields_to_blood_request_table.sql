@@ -1,0 +1,4 @@
+ALTER TABLE blood_request
+    ADD COLUMN geo_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    ADD COLUMN geo_retry_count INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN geo_last_error VARCHAR(500);

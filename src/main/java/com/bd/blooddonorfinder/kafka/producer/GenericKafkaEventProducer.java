@@ -2,59 +2,68 @@ package com.bd.blooddonorfinder.kafka.producer;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
 import com.bd.blooddonorfinder.kafka.registry.KafkaTopicRegistry;
-import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class GenericKafkaEventProducer {
 
     private final KafkaTemplate<String, BaseEvent> kafkaTemplate;
     private final KafkaTopicRegistry topicRegistry;
+    @Value("${kafka.producer.max-publish-retries}")
+    private int maxPublishRetries;
+
+    public GenericKafkaEventProducer(@Qualifier("eventKafkaTemplate") KafkaTemplate<String, BaseEvent> kafkaTemplate,
+                                     KafkaTopicRegistry kafkaTopicRegistry){
+        this.kafkaTemplate = kafkaTemplate;
+        this.topicRegistry = kafkaTopicRegistry;
+    }
 
     public <T extends BaseEvent > void publishEvent(T event){
-        String topic = topicRegistry.getMainTopicToPublishEvent(event.getEventType());
-        String key = event.getAggregateId();
-        log.info("Publishing event: type={}, eventId={}, aggregateId={}, topic={}",
-                event.getEventType(), event.getEventId(), event.getAggregateId(), topic);
+        String topic = topicRegistry.getMainTopicToPublishEvent(event.getTopicName());
+        sendTo(topic, event, true);
+    }
 
-        CompletableFuture<SendResult<String, BaseEvent>> future = kafkaTemplate.send(topic, key, event);
-        future.whenComplete((result, ex)->{
-            if(ex == null){
-                log.info("Event published successfully: eventId={}, topic={}, partition={}, offset={}",
-                        event.getEventId(),
-                        result.getRecordMetadata().topic(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-            } else {
-                log.error("Failed to publish event: eventId={}, eventType={}, error={}",
-                        event.getEventId(), event.getEventType(), ex.getMessage(), ex);
-                log.info("Sending to retry");
-                publishToRetryTopic(event);
-            }
-        });
+    private <T extends BaseEvent> void sendTo(String topic, T event, boolean retryable) {
+        log.info("Publishing event to kafka:eventId={}, aggregateId={}, topic={}",
+                 event.getEventId(), event.getAggregateId(), topic);
+        kafkaTemplate.send(topic, event.getAggregateId(), event)
+                .whenComplete((result, ex)->{
+                    if(ex == null){
+                        var md = result.getRecordMetadata();
+                        log.info("Event published: eventId={}, topic={}, partition={}, offset={}",
+                                event.getEventId(), md.topic(), md.partition(), md.offset());
+                    }else {
+                        log.error("Publish failed: eventId={}, type={}, error={}",
+                                event.getEventId(), event.getTopicName(), ex.getMessage(), ex);
+                        if (retryable && event.getRetryCount() < maxPublishRetries) {
+                            publishToRetryTopic(event);
+                        } else {
+                            publishToDlq(event, ex.getMessage());
+                        }
+                    }
+                });
     }
 
     public <T extends BaseEvent> void publishToRetryTopic(T event) {
-        String retryTopic = topicRegistry.getRetryTopicToPublishForEvent(event.getEventType());
+        event.incrementRetryCount();
+        String retryTopic = topicRegistry.getRetryTopicToPublishEvent(event.getTopicName());
 
         log.info("Publishing to retry topic: eventId={}, retryCount={}, topic={}",
                 event.getEventId(), event.getRetryCount(), retryTopic);
 
-        kafkaTemplate.send(retryTopic, event.getAggregateId(), event);
+        sendTo(retryTopic, event, false);
     }
 
     public <T extends BaseEvent> void publishToDlq(T event, String errorMessage) {
-        String dlqTopic = topicRegistry.getDlqTopicToPublishEvent(event.getEventType());
+        String dlqTopic = topicRegistry.getDlqTopicToPublishEvent(event.getTopicName());
 
         log.error("Publishing to DLQ: eventId={}, eventType={}, error={}, topic={}",
-                event.getEventId(), event.getEventType(), errorMessage, dlqTopic);
+                event.getEventId(), event.getTopicName(), errorMessage, dlqTopic);
 
         kafkaTemplate.send(dlqTopic, event.getAggregateId(), event);
     }

@@ -48,8 +48,10 @@ public class DonorSearchServiceImpl implements DonorSearchService{
 
         if(searchRequest.getGeoLocation().getLatitude() == null || searchRequest.getGeoLocation().getLongitude() == null){
             GeoResponse requesterGeo = geoLocationService.getLatLong(searchRequest.getGeoLocation().getCity());
-            searchRequest.getGeoLocation().setLatitude((requesterGeo.getLatitude()));
-            searchRequest.getGeoLocation().setLongitude(requesterGeo.getLongitude());
+            if(requesterGeo != null){
+                searchRequest.getGeoLocation().setLatitude((requesterGeo.getLatitude()));
+                searchRequest.getGeoLocation().setLongitude(requesterGeo.getLongitude());
+            }
         }
         Map<Boolean, List<User>> partitioned = allDonors.stream()
                 .collect(Collectors.partitioningBy(
@@ -63,11 +65,11 @@ public class DonorSearchServiceImpl implements DonorSearchService{
                 .limit(10)
                 .map(donor -> CompletableFuture.supplyAsync(() -> {
                     try {
-                        GeoResponse geo = geoLocationService.getLatLong(
-                                donor.getGeoLocation().getCity()
-                        );
-                        donor.getGeoLocation().setLatitude(geo.getLatitude());
-                        donor.getGeoLocation().setLongitude(geo.getLongitude());
+                        GeoResponse geo = geoLocationService.getLatLong(donor.getGeoLocation().getCity());
+                        if(geo != null){
+                            donor.getGeoLocation().setLatitude(geo.getLatitude());
+                            donor.getGeoLocation().setLongitude(geo.getLongitude());
+                        }
                         userRepository.save(donor);
                         return donor;
                     } catch (Exception e) {

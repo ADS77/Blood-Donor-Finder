@@ -11,16 +11,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestControllerAdvice
 @Slf4j
@@ -74,36 +71,42 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(BadCredentialsException ex,
                                                                  WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password", request);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password", request);
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleUserNotFound(UsernameNotFoundException ex,
                                                                WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password", request);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password", request);
     }
 
     @ExceptionHandler(InvalidJwtTokenException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidToken(InvalidJwtTokenException ex,
                                                                WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex,
                                                                WebRequest request) {
-        return buildResponse(HttpStatus.FORBIDDEN,
+        return buildErrorResponse(HttpStatus.FORBIDDEN,
                 "You do not have permission to access this resource", request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiErrorResponse> handleAuth(AuthenticationException ex,
                                                        WebRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Authentication failed", request);
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Authentication failed", request);
     }
 
-    private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message,
-                                                           WebRequest request) {
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleRateLimit(RateLimitExceededException ex,
+                                                       WebRequest request) {
+        return buildErrorResponse(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded", request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildErrorResponse(HttpStatus status, String message,
+                                                                WebRequest request) {
         ApiErrorResponse error = ApiErrorResponse.of(
                 status.value(), status.getReasonPhrase(), message, extractPath(request));
         return ResponseEntity.status(status).body(error);

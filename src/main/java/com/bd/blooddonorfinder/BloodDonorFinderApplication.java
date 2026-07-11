@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 
 @SpringBootApplication
@@ -13,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 @EnableConfigurationProperties
 @EnableElasticsearchRepositories(basePackages = "com.bd.blooddonorfinder.repository.es")
+@EnableScheduling
 public class BloodDonorFinderApplication {
 
     public static void main(String[] args) {

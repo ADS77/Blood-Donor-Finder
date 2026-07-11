@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.config.kafka_config;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
 import com.bd.blooddonorfinder.utils.KafkaUtils;
+import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,8 +20,6 @@ import java.util.Map;
 @Configuration
 public class KafkaProducerConfig {
 
-    @Value("${kafka.topic.name}")
-    private String topicName;
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
     @Value("${spring.kafka.producer.acks:all}")
@@ -45,7 +44,8 @@ public class KafkaProducerConfig {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonObjectSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,JsonSerializer.class);
+        configProps.put(JsonSerializer.TYPE_MAPPINGS, KafkaTopics.buildTypeMappings());
         // Reliability properties
         configProps.put(ProducerConfig.ACKS_CONFIG, acks);
         configProps.put(ProducerConfig.RETRIES_CONFIG, retries);
@@ -57,8 +57,7 @@ public class KafkaProducerConfig {
         configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
         configProps.put(ProducerConfig.LINGER_MS_CONFIG, 10);
 
-        configProps.put(JsonSerializer.TYPE_MAPPINGS, KafkaUtils.buildTopicTypeMappings());
-        System.out.println("Type_Mappings : " + KafkaUtils.buildTopicTypeMappings());
+        //configProps.put(JsonSerializer.TYPE_MAPPINGS, KafkaUtils.buildTopicTypeMappings());
         return new DefaultKafkaProducerFactory<>(configProps);
     }
     @Bean("eventKafkaTemplate")

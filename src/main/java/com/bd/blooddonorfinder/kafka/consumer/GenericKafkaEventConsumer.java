@@ -1,3 +1,4 @@
+/*
 package com.bd.blooddonorfinder.kafka.consumer;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
@@ -52,7 +53,7 @@ public class GenericKafkaEventConsumer {
             Acknowledgment acknowledgment
             ){
         log.info("Consumed event: type={}, eventId={}, topic={}, partition={}, offset={}",
-                event.getEventType(), event.getEventId(), topic, partition, offset);
+                event.getTopicName(), event.getEventId(), topic, partition, offset);
         try {
             //Check Idempotency
             if(isEventAlreadyProcessed(event.getEventId())){
@@ -66,11 +67,11 @@ public class GenericKafkaEventConsumer {
             markEventAsProcessed(event);
             acknowledgment.acknowledge();
             log.info("Successfully processed event: eventId={}, type={}",
-                    event.getEventId(), event.getEventType());
+                    event.getEventId(), event.getTopicName());
 
         } catch (Exception e) {
             log.error("Error processing event: eventId={}, type={}, error={}",
-                    event.getEventId(), event.getEventType(), e.getMessage(), e);
+                    event.getEventId(), event.getTopicName(), e.getMessage(), e);
 
             handleFailure(event, e.getMessage(), acknowledgment);
         }
@@ -91,7 +92,7 @@ public class GenericKafkaEventConsumer {
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
             Acknowledgment acknowledgment) {
         log.info("Consumed retry event: type={}, eventId={}, retryCount={}, topic={}",
-                event.getEventType(), event.getEventId(), event.getRetryCount(), topic);
+                event.getTopicName(), event.getEventId(), event.getRetryCount(), topic);
         try {
 
             if (isEventAlreadyProcessed(event.getEventId())) {
@@ -119,7 +120,7 @@ public class GenericKafkaEventConsumer {
 
         EventTracker eventTracker = EventTracker.builder()
                 .eventId(event.getEventId())
-                .eventType(event.getEventType())
+                .eventType(event.getTopicName())
                 .status("PROCESSED")
                 .build();
         eventTrackerRepository.save(eventTracker);
@@ -140,7 +141,7 @@ public class GenericKafkaEventConsumer {
             eventTrackerRepository.save(
                     EventTracker.builder()
                             .eventId(event.getEventId())
-                            .eventType(event.getEventType())
+                            .eventType(event.getTopicName())
                             .status("FAILED")
                             .errorMessage(errorMsg)
                             .build()
@@ -154,3 +155,4 @@ public class GenericKafkaEventConsumer {
        return eventTrackerRepository.existsByEventId(eventId);
     }
 }
+*/

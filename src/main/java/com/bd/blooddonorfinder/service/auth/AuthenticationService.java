@@ -24,12 +24,21 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final TokenStorageService tokenStorageService;
+
+    public AuthenticationService(UserRepository userRepository,
+                                 PasswordEncoder passwordEncoder,
+                                 JwtTokenProvider tokenProvider,
+                                 TokenStorageService tokenStorageService){
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.tokenProvider = tokenProvider;
+        this.tokenStorageService = tokenStorageService;
+    }
 
     @Value("${security.jwt.access.token.validity}")
     private long accessTokenValidity;

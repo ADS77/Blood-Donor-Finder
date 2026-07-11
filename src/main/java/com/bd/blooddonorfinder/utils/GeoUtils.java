@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public class GeoUtils {
 
     public static double haversine(double lat1, double lat2, double lon1, double lon2){
-        // this method returns the distance in Km
+        // this method returns the distance between two geo points in Km
         final int R = 6371;
 
         double dLat = Math.toRadians(lat2 - lat1);

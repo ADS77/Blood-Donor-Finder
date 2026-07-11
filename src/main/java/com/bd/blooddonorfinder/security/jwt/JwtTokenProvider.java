@@ -71,7 +71,7 @@ public class JwtTokenProvider {
     }
 
     public Claims parseExpiredToken(String token) throws InvalidJwtTokenException {
-        try {
+        try{
             return Jwts.parser()
                     .verifyWith(rsaKeyProvider.getPublicKey())
                     .build()

@@ -4,20 +4,20 @@ import com.bd.blooddonorfinder.kafka.interfaces.IndexAbleEvent;
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
 import com.bd.blooddonorfinder.model.User;
 import com.bd.blooddonorfinder.utils.constants.ElasticIndexes;
-import com.bd.blooddonorfinder.utils.constants.KafkaEventType;
+import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @ToString(callSuper = true)
 public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
     private Long userId;
-    private String name;
+    private String username;
     private String email;
     private String phone;
     private String role;
@@ -36,11 +36,14 @@ public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
     private Double rating;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    public UserRegisteredEvent(String eventId){
+        super(eventId,KafkaTopics.USER_REGISTERED,"UserRegisteredEvent");
+    }
 
     public static UserRegisteredEvent from(User user) {
-        UserRegisteredEvent event = new UserRegisteredEvent();
+        UserRegisteredEvent event = new UserRegisteredEvent(UUID.randomUUID().toString());
         event.setUserId(user.getId());
-        event.setName(user.getName());
+        event.setUsername(user.getName());
         event.setEmail(user.getEmail());
         event.setPhone(user.getPhone());
         //event.setRole(user.getRole().name()!= null ? user.getRole().name() : "reg_user");
@@ -56,15 +59,21 @@ public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
             event.setAddress(user.getGeoLocation().getAddress());
             event.setDistrict(user.getGeoLocation().getDistrict());
             event.setCity(user.getGeoLocation().getCity());
-            event.setCountry(user.getGeoLocation().getCountry());
-            event.setLatitude(user.getGeoLocation().getLatitude());
-            event.setLongitude(user.getGeoLocation().getLongitude());
-            event.setZipcode(user.getGeoLocation().getZipcode());
+            if( user.getGeoLocation().getCountry() != null){
+                event.setCountry(user.getGeoLocation().getCountry());
+            }
+            if(user.getGeoLocation().getLatitude() != null){
+                event.setLatitude(user.getGeoLocation().getLatitude());
+            }
+            if(user.getGeoLocation().getLongitude() != null){
+                event.setLongitude(user.getGeoLocation().getLongitude());
+            }
+            if(user.getGeoLocation().getZipcode() !=null){
+                event.setZipcode(user.getGeoLocation().getZipcode());
+            }
         }
-        // Set base event metadata
-        event.setEventType(KafkaEventType.USER_REGISTERED);
-        event.setEventTimeStamp(LocalDateTime.now());
-        event.setRetryCount(1);
+        event.setAggregateId(String.valueOf(user.getId()));
+        event.setVersion(user.getVersion());
         return event;
     }
 
@@ -74,8 +83,4 @@ public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
         return ElasticIndexes.REGISTERED_DONORS_INDEX;
     }
 
-    @Override
-    public String getAggregateId() {
-        return userId.toString();
-    }
 }

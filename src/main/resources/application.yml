@@ -4,3 +4,25 @@ spring:
     redis:
       namespace: bdf-portal
       flush-mode: immediate
+
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bd_db
+    username: bduser
+    password: bdpassword
+    driver-class-name: org.postgresql.Driver
+
+    jpa:
+      hibernate:
+        ddl-auto: update
+      properties:
+        hibernate:
+          format_sql: true
+      show-sql: false
+
+    sql:
+      init:
+        mode: never
+
+  flyway:
+    enabled: true

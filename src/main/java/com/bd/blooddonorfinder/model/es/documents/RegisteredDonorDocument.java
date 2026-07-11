@@ -1,6 +1,7 @@
 package com.bd.blooddonorfinder.model.es.documents;
 
 import com.bd.blooddonorfinder.kafka.model.events.UserRegisteredEvent;
+import com.bd.blooddonorfinder.utils.constants.ElasticIndexes;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -8,8 +9,9 @@ import org.springframework.data.elasticsearch.annotations.*;
 import org.springframework.data.elasticsearch.core.geo.GeoPoint;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Document(indexName = "registered_donors")
+@Document(indexName = ElasticIndexes.REGISTERED_DONORS_INDEX)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +22,7 @@ public class RegisteredDonorDocument {
     private String id;
 
     @Field(type = FieldType.Text, analyzer = "standard")
-    private String name;
+    private String username;
 
     @Field(type = FieldType.Keyword)
     private String email;
@@ -29,7 +31,7 @@ public class RegisteredDonorDocument {
     private String phoneNumber;
 
     @Field(type = FieldType.Keyword)
-    private String role;
+    private List<String> roles;
 
     @Field(type = FieldType.Keyword)
     private String bloodGroup;
@@ -74,16 +76,15 @@ public class RegisteredDonorDocument {
     private Long version;
 
     public static RegisteredDonorDocument from (UserRegisteredEvent event){
-        return  RegisteredDonorDocument.builder()
-                .id(event.getUserId().toString())
-                .name(event.getName())
+        RegisteredDonorDocument doc =  RegisteredDonorDocument.builder()
+                .id(String.valueOf(event.getUserId()))
+                .username(event.getUsername())
                 .email(event.getEmail())
                 .phoneNumber(event.getPhone())
                 .bloodGroup(event.getBloodGroup())
                 .city(event.getCity())
                 .district(event.getDistrict())
                 .country(event.getCountry())
-                .location(new GeoPoint(event.getLatitude().doubleValue(), event.getLongitude().doubleValue()))
                 .isVerified(event.getIsVerified())
                 .imgUrl(event.getImgUrl())
                 .lastDonationDate(event.getLastDonationDate())
@@ -91,7 +92,12 @@ public class RegisteredDonorDocument {
                 .totalDonations(event.getTotalDonations())
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
+                .version(event.getVersion())
                 .build();
+        if(event.getLatitude() != null && event.getLongitude() != null){
+            doc.setLocation(new GeoPoint(event.getLatitude().doubleValue(), event.getLongitude().doubleValue()));
+        }
+        return doc;
     }
 
 }

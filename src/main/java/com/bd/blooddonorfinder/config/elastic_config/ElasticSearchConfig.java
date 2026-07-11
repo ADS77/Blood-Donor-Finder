@@ -9,29 +9,52 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 //@EnableElasticsearchRepositories(basePackages = "com.bd.blooddonerfinder.model.es.documents")
 public class ElasticSearchConfig {
-    @Bean
-    public ElasticsearchClient elasticsearchClient(){
-        RestClient restClient = RestClient.builder(
-                new HttpHost("localhost", 9200,"http")
-        ).build();
-        ElasticsearchTransport transport = new RestClientTransport(
-                restClient,
-                new JacksonJsonpMapper()
-        );
-        return  new co.elastic.clients.elasticsearch.ElasticsearchClient(transport);
-    }
+    @Value("${elasticsearch.host}")
+    private String host;
+
+    @Value("${elasticsearch.port}")
+    private int port;
+
+    @Value("${elasticsearch.scheme}")
+    private String scheme;
 
     @Bean
-    public ObjectMapper objectMapper(){
+    public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
+    }
+
+    @Bean(destroyMethod = "close")
+    public RestClient restClient() {
+        return RestClient.builder(
+                new HttpHost(host, port, scheme)
+        ).build();
+    }
+
+    @Bean
+    public ElasticsearchTransport elasticsearchTransport(
+            RestClient restClient,
+            ObjectMapper objectMapper
+    ) {
+        return new RestClientTransport(
+                restClient,
+                new JacksonJsonpMapper(objectMapper)
+        );
+    }
+
+    @Bean
+    public ElasticsearchClient elasticsearchClient(
+            ElasticsearchTransport transport
+    ) {
+        return new ElasticsearchClient(transport);
     }
 }
