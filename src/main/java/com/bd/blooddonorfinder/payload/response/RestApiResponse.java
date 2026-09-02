@@ -19,6 +19,12 @@ public class RestApiResponse<T>  {
     private int totalCount;
     private ErrorDetails error;
 
+    public static <T> RestApiResponse<T> of (T data){
+        RestApiResponse response = new RestApiResponse();
+        response.getSuccess().setData(data);
+        return response;
+    }
+
     public RestApiResponse(HttpStatus httpStatus, SuccessDetails successDetails) {
         this.statusCode = StatusCode.SUCCESS;
         this.status = httpStatus;
