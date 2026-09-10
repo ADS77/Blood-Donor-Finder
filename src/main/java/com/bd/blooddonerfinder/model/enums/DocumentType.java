@@ -1,3 +1,5 @@
+package com.bd.blooddonerfinder.model.enums;
+
 public enum DocumentType {
 
     BLOOD_DONATION_CERTIFICATE,
