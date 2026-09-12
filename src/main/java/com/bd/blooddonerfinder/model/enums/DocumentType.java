@@ -1,0 +1,16 @@
+package com.bd.blooddonerfinder.model.enums;
+
+public enum DocumentType {
+
+    BLOOD_DONATION_CERTIFICATE,
+
+    BLOOD_TEST_REPORT,
+
+    BLOOD_GROUP_CERTIFICATE,
+
+    MEDICAL_PRESCRIPTION,
+
+    BLOOD_CHECKUP_REPORT,
+
+    OTHER
+}
