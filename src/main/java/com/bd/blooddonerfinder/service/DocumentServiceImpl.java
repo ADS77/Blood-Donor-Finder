@@ -16,7 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.List;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -24,6 +26,17 @@ import java.util.UUID;
 @Slf4j
 @Service
 public class DocumentServiceImpl implements DocumentService {
+    private static final Map<String, String> SUPPORTED_FILE_TYPES = Map.of(
+            "pdf", "application/pdf",
+            "png", "image/png",
+            "jpg", "image/jpeg",
+            "jpeg", "image/jpeg",
+            "doc", "application/msword",
+            "docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    private static final Set<String> GENERIC_CONTENT_TYPES = Set.of(
+            "application/octet-stream",
+            "application/binary");
+
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final MinioStorageService storageService;
@@ -48,10 +61,11 @@ public class DocumentServiceImpl implements DocumentService {
         String fileName = Paths.get(StringUtils.cleanPath(file.getOriginalFilename() == null
                 ? "document"
                 : file.getOriginalFilename())).getFileName().toString();
-        String objectKey = userId + "/" + UUID.randomUUID() + "-" + fileName;
         String contentType = file.getContentType() == null
                 ? "application/octet-stream"
-                : file.getContentType();
+                : file.getContentType().toLowerCase(Locale.ROOT);
+        validateFileType(fileName, contentType);
+        String objectKey = userId + "/" + UUID.randomUUID() + "-" + fileName;
 
         try (InputStream inputStream = file.getInputStream()) {
             storageService.upload(objectKey, inputStream, file.getSize(), contentType);
@@ -67,6 +81,23 @@ public class DocumentServiceImpl implements DocumentService {
         document.setContentType(contentType);
         document.setFileSize(file.getSize());
         return documentRepository.save(document);
+    }
+
+    private void validateFileType(String fileName, String contentType) {
+        int extensionSeparator = fileName.lastIndexOf('.');
+        String extension = extensionSeparator >= 0
+                ? fileName.substring(extensionSeparator + 1).toLowerCase(Locale.ROOT)
+                : "";
+        String expectedContentType = SUPPORTED_FILE_TYPES.get(extension);
+
+        if (expectedContentType == null) {
+            throw new IllegalArgumentException(
+                    "Unsupported file type. Supported types are PDF, PNG, JPG, DOC and DOCX");
+        }
+
+        if (!GENERIC_CONTENT_TYPES.contains(contentType) && !expectedContentType.equals(contentType)) {
+            throw new IllegalArgumentException("File extension does not match the MIME type");
+        }
     }
 
     @Override
