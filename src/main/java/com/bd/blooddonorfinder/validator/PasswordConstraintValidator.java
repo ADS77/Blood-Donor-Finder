@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PasswordConstraintValidator implements ConstraintValidator<ValidPassword, String> {
-    private static final int MIN_LENGTH = 8;
+    private static final int MIN_LENGTH = 6;
     private static final int MAX_LENGTH = 72;
     @Override
     public boolean isValid(String password, ConstraintValidatorContext constraintValidatorContext) {
