@@ -1,4 +1,4 @@
-package com.bd.blooddonorfinder.model;
+package com.bd.blooddonorfinder.model.common;
 
 import com.bd.blooddonorfinder.model.enums.GeoStatus;
 import jakarta.persistence.Column;
@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Embeddable
 @Data
@@ -43,8 +44,12 @@ public class GeoLocation implements Serializable {
     @Enumerated(EnumType.STRING)
     private GeoStatus geoStatus = GeoStatus.PENDING;
 
+    @Column(name = "geo_retry_count")
     private int geoRetryCount = 0;
 
-    @Column(length = 500)
+    @Column(name = "geo_last_error")
     private String geoLastError;
+
+    @Column(name = "geo_claimed_at")
+    private Instant geoClaimedAt;
 }

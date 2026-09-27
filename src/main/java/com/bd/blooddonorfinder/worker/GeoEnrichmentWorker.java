@@ -1,9 +1,8 @@
 package com.bd.blooddonorfinder.worker;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.GeoStatus;
 import com.bd.blooddonorfinder.repository.UserRepository;
-import com.bd.blooddonorfinder.service.GeoLocationService;
 import com.bd.blooddonorfinder.worker.service.GeoEnrichmentTransactionalService;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.LockAssert;
@@ -24,12 +23,13 @@ public class GeoEnrichmentWorker {
     private static final int BATCH_SIZE = 20;
     private static final long THROTTLE_MS = 1100;
 
-    public GeoEnrichmentWorker(UserRepository userRepository,GeoEnrichmentTransactionalService geoEnrichmentTransactionalService) {
+    public GeoEnrichmentWorker(UserRepository userRepository,
+                               GeoEnrichmentTransactionalService geoEnrichmentTransactionalService) {
         this.userRepository = userRepository;
         this.geoEnrichmentTransactionalService = geoEnrichmentTransactionalService;
     }
 
-    @Scheduled(fixedDelayString = "${geo.enrichment.poll-interval:30m}")
+    @Scheduled(fixedDelayString = "${geo.enrichment.poll-interval:10m}")
     @SchedulerLock(name = "geoEnrichmentWorker", lockAtLeastFor = "PT10S", lockAtMostFor = "PT5M")
     public void processPendingGeoEnrichment(){
         log.info("Geo enrichment worker starts at: {}", Instant.now());
@@ -50,7 +50,7 @@ public class GeoEnrichmentWorker {
             }
             sleepQuietly(THROTTLE_MS);
         }
-
+        log.info("Geo enrichment worker ends at: {}", Instant.now());
     }
 
     private void sleepQuietly(long throttleMs) {

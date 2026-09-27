@@ -1,7 +1,7 @@
 package com.bd.blooddonorfinder.service;
 
 import com.bd.blooddonorfinder.exception.GeoLocationException;
-import com.bd.blooddonorfinder.model.GeoResponse;
+import com.bd.blooddonorfinder.payload.response.GeoResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;

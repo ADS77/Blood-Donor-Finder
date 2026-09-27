@@ -1,72 +1,91 @@
 package com.bd.blooddonorfinder.worker.service;
 
-import com.bd.blooddonorfinder.model.GeoLocation;
-import com.bd.blooddonorfinder.model.GeoResponse;
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.kafka.model.BaseEvent;
+import com.bd.blooddonorfinder.kafka.model.events.UserGeoEnrichedEvent;
+import com.bd.blooddonorfinder.kafka.producer.GenericKafkaEventProducer;
+import com.bd.blooddonorfinder.model.common.GeoLocation;
+import com.bd.blooddonorfinder.payload.response.GeoResponse;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.GeoStatus;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.service.GeoLocationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @Slf4j
 public class GeoEnrichmentTransactionalService {
     private final UserRepository userRepository;
     private final GeoLocationService geoLocationService;
+    private final GenericKafkaEventProducer eventProducer;
 
     private static final int MAX_RETRY_ATTEMPTS = 5;
 
-    public GeoEnrichmentTransactionalService(UserRepository userRepository, GeoLocationService geoLocationService) {
+    public GeoEnrichmentTransactionalService(UserRepository userRepository,
+                                             GeoLocationService geoLocationService,
+                                             GenericKafkaEventProducer eventProducer) {
         this.userRepository = userRepository;
         this.geoLocationService = geoLocationService;
+        this.eventProducer = eventProducer;
     }
 
     @Transactional
-    public void enrichSingleUser(Long userId) {
-        User locked = userRepository.findByIdForUpdate(userId).orElse(null);
-        if (locked == null || locked.getGeoLocation().getGeoStatus() != GeoStatus.PENDING) {
+    public void enrichSingleUser(UUID userId) {
+        int claim = userRepository.claimForGeoEnrichment(userId);
+        if(claim == 0){
+            log.info("Already claimed by another instance for geo enrichment, userId = {}", userId);
             return;
         }
 
-        GeoLocation geo = locked.getGeoLocation();
+        Optional<User> user = userRepository.findById(userId);
+        if(user.isPresent()){
+            GeoLocation geoLocation = user.get().getGeoLocation();
+            try {
+                GeoResponse geoResponse = geoLocationService.getLatLong(geoLocation.getCity());
+                if(geoResponse != null && geoResponse.isSuccess()){
+                    UserGeoEnrichedEvent  geoEnrichedEvent = UserGeoEnrichedEvent.from(user.get(), geoResponse);
+                    publishEventAfterCommit(geoEnrichedEvent);
+                }else {
+                    handleFailure(geoLocation, userId, "Geocoding service returned no result");
 
-        try {
-            GeoResponse response = geoLocationService.getLatLong(geo.getCity());
-
-            if (response != null && response.isSuccess()) {
-                geo.setLatitude(response.getLatitude());
-                geo.setLongitude(response.getLongitude());
-                geo.setGeoStatus(GeoStatus.COMPLETED);
-                geo.setGeoLastError(null);
-                log.info("Geo enrichment succeeded for userId={}", userId);
-            } else {
-                handleFailure(geo, userId, "Geocoding service returned no result");
+                }
+            }catch (Exception e){
+                handleFailure(geoLocation, userId,e.getMessage());
             }
-        } catch (Exception e) {
-            handleFailure(geo, userId, e.getMessage());
         }
-
-        userRepository.save(locked);
     }
 
-    private void handleFailure(GeoLocation geo, Long userId, String reason) {
+    private void publishEventAfterCommit(BaseEvent geoEnrichedEvent) {
+        if(TransactionSynchronizationManager.isSynchronizationActive()){
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            eventProducer.publishEvent(geoEnrichedEvent);
+                        }
+                    }
+            );
+        }else {
+            eventProducer.publishEvent(geoEnrichedEvent);
+        }
+    }
+
+    private void handleFailure(GeoLocation geo, UUID userId, String reason) {
         int attempts = geo.getGeoRetryCount() + 1;
-        geo.setGeoRetryCount(attempts);
-        geo.setGeoLastError(truncate(reason, 500));
-
-        if (attempts >= MAX_RETRY_ATTEMPTS) {
-            geo.setGeoStatus(GeoStatus.FAILED);
-            log.warn("Geo enrichment permanently failed for userId={} after {} attempts", userId, attempts);
-        } else {
-            geo.setGeoStatus(GeoStatus.PENDING);
-            log.warn("Geo enrichment attempt {}/{} failed for userId={}", attempts, MAX_RETRY_ATTEMPTS, userId);
-        }
+        GeoStatus nextGeoStatus = attempts >= MAX_RETRY_ATTEMPTS ? GeoStatus.FAILED : GeoStatus.PENDING;
+        userRepository.updateGeoEnrichmentFailureStatus(userId, nextGeoStatus, attempts, truncate(reason));
+        log.warn("Geo enrichment attempt {}/{} failed for userId={}: {} -> next status {}",
+                attempts, MAX_RETRY_ATTEMPTS, userId, reason, nextGeoStatus);
     }
 
-    private String truncate(String s, int max) {
+    private String truncate(String s) {
         if (s == null) return null;
-        return s.length() <= max ? s : s.substring(0, max);
+        return s.length() <= 500 ? s : s.substring(0, 500);
     }
 }

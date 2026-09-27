@@ -1,4 +1,4 @@
-package com.bd.blooddonorfinder.model;
+package com.bd.blooddonorfinder.payload.response;
 
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
