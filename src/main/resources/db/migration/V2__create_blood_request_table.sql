@@ -1,6 +1,6 @@
 CREATE TABLE blood_request (
-                               id BIGSERIAL PRIMARY KEY,
-                               requester_id BIGINT NOT NULL,
+                               id          UUID PRIMARY KEY,
+                               requester_id UUID NOT NULL,
                                blood_group VARCHAR(20) NOT NULL,
                                message VARCHAR(1000),
                                request_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

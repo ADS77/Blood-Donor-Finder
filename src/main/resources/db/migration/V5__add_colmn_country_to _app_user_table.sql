@@ -1,2 +1,2 @@
 ALTER TABLE app_user
-    ADD COLUMN country VARCHAR(100);
+    ADD COLUMN IF NOT EXISTS country VARCHAR(100);
