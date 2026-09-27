@@ -24,7 +24,7 @@ public class MailServiceImpl implements MailService{
 
 
     @Override
-    public void sendMail(SendMailRequest mailRequest) {
+    public boolean sendMail(SendMailRequest mailRequest) {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
@@ -54,10 +54,11 @@ public class MailServiceImpl implements MailService{
 
             mailSender.send(mimeMessage);
             log.info("Mail sent successfully...............");
+            return  true;
         } catch (MessagingException e) {
-            log.error("Error sending email : {}",e.getCause());
+            log.error("Error sending email to : {}, cause : {}",mailRequest.getMailTo(),e.getCause());
             e.printStackTrace();
-            throw new RuntimeException("Failed to send email", e);
+            return false;
         }
     }
 }

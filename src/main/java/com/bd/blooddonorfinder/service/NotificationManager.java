@@ -1,10 +1,12 @@
 package com.bd.blooddonorfinder.service;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
 
 import java.util.List;
 
 public interface NotificationManager {
-    public void notifyByMail(List<User> donors, DonorSearchRequest searchRequest);
+    public boolean notifyByMail(User user, String email, String otp, String purpose);
+
+    void notifyByMail(List<User> eligibleDonors, DonorSearchRequest donorSearchRequest);
 }
