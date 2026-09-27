@@ -4,6 +4,7 @@ import com.bd.blooddonorfinder.payload.response.ApiErrorResponse;
 import com.bd.blooddonorfinder.payload.response.ErrorDetails;
 import com.bd.blooddonorfinder.payload.response.ErrorResponse;
 import com.bd.blooddonorfinder.security.exception.InvalidJwtTokenException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,14 @@ import java.util.List;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthException(
+            AuthException ex, HttpServletRequest request) {
+        HttpStatus status = mapErrorCodeToStatus(ex.getErrorCode());
+        log.warn("AuthException [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        return buildErrorResponse(status, ex.getErrorCode().name(), request);
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException (Exception ex){
         ErrorResponse error = new ErrorResponse();
@@ -105,10 +114,15 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded", request);
     }
 
-    private ResponseEntity<ApiErrorResponse> buildErrorResponse(HttpStatus status, String message,
-                                                                WebRequest request) {
+    private ResponseEntity<ApiErrorResponse> buildErrorResponse(
+            HttpStatus status,
+            String message,
+            WebRequest request) {
         ApiErrorResponse error = ApiErrorResponse.of(
-                status.value(), status.getReasonPhrase(), message, extractPath(request));
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                extractPath(request));
         return ResponseEntity.status(status).body(error);
     }
 
@@ -116,4 +130,29 @@ public class GlobalExceptionHandler {
         return request.getDescription(false).replace("uri=", "");
     }
 
+    private ResponseEntity<ApiErrorResponse> buildErrorResponse(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request) {
+
+        ApiErrorResponse error = ApiErrorResponse.of(
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(error);
+    }
+    private HttpStatus mapErrorCodeToStatus(ErrorCode code) {
+        return switch (code) {
+            case USER_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case USER_ALREADY_EXISTS -> HttpStatus.CONFLICT;
+            case UNAUTHORIZED, REFRESH_REUSE_ATTACK -> HttpStatus.UNAUTHORIZED;
+            case RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
+            case ACCOUNT_LOCKED, ACCOUNT_NOT_VERIFIED -> HttpStatus.FORBIDDEN;
+            case TOKEN_EXPIRED, TOKEN_INVALID -> HttpStatus.UNAUTHORIZED;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+    }
 }
