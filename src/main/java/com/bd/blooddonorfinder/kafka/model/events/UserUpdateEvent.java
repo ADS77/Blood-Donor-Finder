@@ -1,8 +1,8 @@
 package com.bd.blooddonorfinder.kafka.model.events;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
-import com.bd.blooddonorfinder.model.User;
-import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
+import com.bd.blooddonorfinder.model.common.User;
+import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import lombok.*;
 @Getter
 @Setter
@@ -11,7 +11,7 @@ import lombok.*;
 public class UserUpdateEvent extends BaseEvent {
 
     public UserUpdateEvent(String eventId){
-        super(eventId, KafkaTopics.USER_UPDATE,"UserUpdateEvent");
+        super(KafkaTopics.USER_UPDATE,"UserUpdateEvent");
 
     }
 

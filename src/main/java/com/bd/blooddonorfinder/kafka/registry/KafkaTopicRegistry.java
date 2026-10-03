@@ -2,7 +2,7 @@ package com.bd.blooddonorfinder.kafka.registry;
 
 import com.bd.blooddonorfinder.kafka.interfaces.TopicNamingStrategy;
 import com.bd.blooddonorfinder.kafka.model.topic.TopicType;
-import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
+import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

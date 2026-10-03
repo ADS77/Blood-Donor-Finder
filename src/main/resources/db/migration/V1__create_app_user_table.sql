@@ -10,7 +10,7 @@ CREATE TABLE app_user (
                           password VARCHAR(255) NOT NULL,
 
                           blood_group VARCHAR(20),
-                          verified BOOLEAN,
+                          is_verified BOOLEAN,
                           is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
                           failed_otp_attempts INTEGER NOT NULL DEFAULT 0,

@@ -4,21 +4,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
-@Getter
-public class AuthResponse implements Serializable {
+@AllArgsConstructor
+public class AuthResponse {
     private String username;
-    @JsonProperty("access_token")
-    private String accessToken;
-    @JsonProperty("refresh_token")
-    private String refreshToken;
+    @JsonProperty("token_response")
+    private TokenResponse tokenResponse;
+    @JsonProperty("otp_sent_response")
+    private OtpSentResponse otpSentResponse;
 
-    public AuthResponse(String username, String accessToken, String refreshToken){
-        this.username = username;
-        this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
+    public static AuthResponse of (String username){
+        return buildAuthResponse(
+                username,
+                null,
+                null);
     }
 
+    private static AuthResponse buildAuthResponse(String username, TokenResponse tokenResponse, OtpSentResponse otpSentResponse){
+        return AuthResponse.builder()
+                .username(username)
+                .otpSentResponse(otpSentResponse)
+                .tokenResponse(tokenResponse)
+                .build();
+    }
 }

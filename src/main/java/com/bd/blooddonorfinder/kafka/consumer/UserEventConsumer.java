@@ -27,11 +27,11 @@ public class UserEventConsumer {
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void onUserEvent(BaseEvent event, Acknowledgment ack){
-        log.info("Received eventId={}, topic={}, aggregateId={}, version={}, event = {}",
+        log.info("Consumed UserEvent eventId={}, topic={}, aggregateId={}, version={}, event = {}",
                 event.getEventId(), event.getTopicName(),
                 event.getAggregateId(), event.getVersion(), event);
         eventDispatcher.dispatch(event);
-        log.info("Event dispatched successfully. eventId = {}", event.getEventId());
+        log.info("UserEvent dispatched successfully. eventId = {}", event.getEventId());
         ack.acknowledge();
     }
 }

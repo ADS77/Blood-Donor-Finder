@@ -2,9 +2,9 @@ package com.bd.blooddonorfinder.kafka.model.events;
 
 import com.bd.blooddonorfinder.kafka.interfaces.IndexAbleEvent;
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.utils.constants.ElasticIndexes;
-import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
+import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -13,10 +13,9 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @ToString(callSuper = true)
 public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
-    private Long userId;
+    private UUID userId;
     private String username;
     private String email;
     private String phone;
@@ -36,16 +35,16 @@ public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
     private Double rating;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    public UserRegisteredEvent(String eventId){
-        super(eventId,KafkaTopics.USER_REGISTERED,"UserRegisteredEvent");
+    public UserRegisteredEvent(){
+        super(KafkaTopics.USER_REGISTERED,"UserRegisteredEvent");
     }
 
     public static UserRegisteredEvent from(User user) {
-        UserRegisteredEvent event = new UserRegisteredEvent(UUID.randomUUID().toString());
+        UserRegisteredEvent event = new UserRegisteredEvent();
         event.setUserId(user.getId());
-        event.setUsername(user.getName());
-        event.setEmail(user.getEmail());
-        event.setPhone(user.getPhone());
+        event.setUsername(user.getFirstName());
+        /*event.setEmail(user.getEmailToken());
+        event.setPhone(user.getPhone());*/
         //event.setRole(user.getRole().name()!= null ? user.getRole().name() : "reg_user");
         event.setBloodGroup(user.getBloodGroup().name());
         event.setIsVerified(user.getIsVerified());

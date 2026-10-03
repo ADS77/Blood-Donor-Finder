@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.utils;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;

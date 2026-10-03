@@ -14,7 +14,7 @@ spring:
 
     jpa:
       hibernate:
-        ddl-auto: update
+        ddl-auto: validate
       properties:
         hibernate:
           format_sql: true
@@ -26,3 +26,26 @@ spring:
 
   flyway:
     enabled: true
+    locations: classpath:db/migration
+
+sondhan:
+  async:
+    audit:
+      core-pool-size: 2
+      max-pool-size: 5
+      queue-capacity: 100
+      keep-alive-seconds: 60
+    geo-fetch:
+      core-pool-size: 5
+      max-pool-size: 20
+      queue-capacity: 500
+      keep-alive-seconds: 60
+
+  cors:
+    allowed-origins:
+      - ${CORS_ORIGIN_1:http://localhost:3000}
+      - ${CORS_ORIGIN_2:http://localhost:3001}
+      - ${CORS_ORIGIN_3:http://localhost:3002}
+
+  pii:
+    encryption-key: "@#$Ad01100110010110011001@#$"

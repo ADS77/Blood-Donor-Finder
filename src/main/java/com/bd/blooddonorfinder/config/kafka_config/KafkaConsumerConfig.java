@@ -2,8 +2,7 @@ package com.bd.blooddonorfinder.config.kafka_config;
 
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
-import com.bd.blooddonorfinder.utils.KafkaUtils;
-import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
+import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;

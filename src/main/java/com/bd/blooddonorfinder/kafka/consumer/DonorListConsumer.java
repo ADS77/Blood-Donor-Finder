@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.kafka.consumer;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.payload.message.DonorNotificationMessage;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
 import com.bd.blooddonorfinder.service.NotificationManager;
@@ -77,7 +77,7 @@ public class DonorListConsumer {
               try {
                   notificationManager.notifyByMail(eligibleDonors, searchRequest);
               } catch (Exception e) {
-                  log.error("Failed to send email to donor: {}", donor.getName());
+                  log.error("Failed to send email to donor: {}", donor.getFirstName());
               }
           }, executorService);
           futures.add(future);

@@ -1,20 +1,28 @@
 package com.bd.blooddonorfinder.payload.request;
 
-import com.bd.blooddonorfinder.model.GeoLocation;
+import com.bd.blooddonorfinder.model.common.GeoLocation;
 import com.bd.blooddonorfinder.model.enums.BloodGroup;
 import com.bd.blooddonorfinder.validator.ValidPassword;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 @Data
-public class UserRegistrationRequest implements Serializable {
+public class RegisterRequest implements Serializable {
 
-    @NotBlank(message = "Name is required")
-    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
-    private String name;
+    @NotBlank(message = "First name is required")
+    @Size(max = 100)
+    @JsonProperty("first_name")
+    String firstName;
+
+    @NotBlank(message = "Last name is required")
+    @Size(max = 100)
+    @JsonProperty("last_name")
+    String lastName;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Must be a valid email address")
@@ -30,9 +38,13 @@ public class UserRegistrationRequest implements Serializable {
     private String password;
 
     @NotNull(message = "Blood group is required")
+    @JsonProperty("blood_group")
     private BloodGroup bloodGroup;
 
     @Valid
-    @NotNull(message = "Location information is required")
+    @Nullable()
+    @JsonProperty("geo_location")
     private GeoLocation geoLocation;
+
+    private String role;
 }

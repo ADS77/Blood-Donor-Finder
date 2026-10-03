@@ -9,6 +9,11 @@ public record OtpSentResponse(
         UUID userId,
         String message,
         @JsonProperty("otp_expires_in_seconds")
-        int otpExpiresInSeconds
+        int otpExpiresInSeconds,
+        @JsonProperty("error_response")
+        ErrorResponse errorResponse
 ) {
+        public OtpSentResponse(UUID id, String msg, int ttl) {
+                this(id, msg, ttl, null);
+        }
 }

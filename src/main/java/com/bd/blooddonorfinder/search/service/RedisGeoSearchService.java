@@ -136,7 +136,7 @@ public class RedisGeoSearchService {
         if (result != null && result >= 999) {
             log.warn("Rate limit exceeded for user={}", userId);
             meterRegistry.counter("geo.search.rate_limited").increment();
-            throw new RateLimitExceededException(userId);
+            throw new RateLimitExceededException("RateLimit exceeded for redis geo hot path search, userId:"+ userId);
         }
     }
 

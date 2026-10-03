@@ -1,8 +1,6 @@
 package com.bd.blooddonorfinder.controller;
 
-import com.bd.blooddonorfinder.model.User;
-import com.bd.blooddonorfinder.payload.request.UserRegistrationRequest;
-import com.bd.blooddonorfinder.payload.response.RestApiResponse;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,14 +29,13 @@ public class UserController {
     @PostMapping("/update")
     public ResponseEntity<String> updateUser(@RequestBody User updatedUser){
         log.debug("updating user : {}", updatedUser);
-        Optional<User> currentUser = userRepository.findByPhone(updatedUser.getPhone());
+        Optional<User> currentUser = userRepository.findByPhoneToken(updatedUser.getPhoneToken());
         if (currentUser.isPresent()) {
             User existingUser = currentUser.get();
             existingUser.setIsAvailable(updatedUser.getIsAvailable());
-            existingUser.setEmail(updatedUser.getEmail());
-            existingUser.setPhone(updatedUser.getPhone());
+            existingUser.setFirstName(updatedUser.getFirstName());
+            existingUser.setLastName(updatedUser.getLastName());
             existingUser.setUpdatedAt(LocalDateTime.now());
-            existingUser.setName(updatedUser.getName());
             existingUser.setRoles(updatedUser.getRoles());
             existingUser.setBloodGroup(updatedUser.getBloodGroup());
             existingUser.setGeoLocation(updatedUser.getGeoLocation());

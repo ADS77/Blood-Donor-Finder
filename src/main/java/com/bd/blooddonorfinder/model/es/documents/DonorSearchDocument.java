@@ -1,6 +1,7 @@
 package com.bd.blooddonorfinder.model.es.documents;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.Role;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.es.Location;
 import com.bd.blooddonorfinder.utils.constants.ElasticIndexes;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -69,12 +70,12 @@ public class DonorSearchDocument implements Serializable {
         if(user == null) return null;
         DonorSearchDocument doc = DonorSearchDocument.builder()
                 .id(user.getId().toString())
-                .name(user.getName())
-                .email(user.getEmail())
-                .phone(user.getPhone())
+                .name(user.getFirstName())
+                /*.email(user.getEmail())
+                .phone(user.getPhone())*/
                 .bloodGroup(user.getBloodGroup().name())
                 //.role(user.getRole().name())
-                .roles(user.getRoles().stream().map(Enum::name).toList())
+                .roles(user.getRoles().stream().map(Role::getName).toList())
                 .isVerified(user.getIsVerified())
                 .isAvailable(user.getIsAvailable())
                 .lastDonationDate(user.getLastDonationDate().toString())
@@ -85,8 +86,8 @@ public class DonorSearchDocument implements Serializable {
                     .address(user.getGeoLocation().getAddress())
                     .city(user.getGeoLocation().getCity())
                     .district(user.getGeoLocation().getDistrict())
-                    .latitude(user.getGeoLocation().getLatitude())
-                    .longitude(user.getGeoLocation().getLongitude())
+                    .latitude(user.getGeoLocation().getLatitude().doubleValue())
+                    .longitude(user.getGeoLocation().getLongitude().doubleValue())
                     .zipcode(user.getGeoLocation().getZipcode())
                     .build();
             doc.setLocation(location);

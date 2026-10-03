@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.payload.request;
 
-import com.bd.blooddonorfinder.model.GeoLocation;
+import com.bd.blooddonorfinder.model.common.GeoLocation;
 import com.bd.blooddonorfinder.model.enums.BloodGroup;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

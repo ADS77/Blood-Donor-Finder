@@ -19,7 +19,7 @@ public class JpaProcessedEventStore implements ProcessedEventStore{
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean markProcessedIfAbsent(String eventId, String topicName, String aggregateId) {
-        if(repository.existsById(eventId)){
+        if(isProcessed(eventId)){
             return false;
         }
         try {

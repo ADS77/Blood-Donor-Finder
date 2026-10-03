@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
 import io.lettuce.core.TimeoutOptions;
+import io.lettuce.core.cluster.ClusterClientOptions;
+import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -54,6 +56,16 @@ public class RedisClusterConfig {
             poolConfig.setMaxWait(pool.getMaxWait());
         }
 
+        ClusterTopologyRefreshOptions topologyRefreshOptions =
+                ClusterTopologyRefreshOptions.builder()
+                .enablePeriodicRefresh(Duration.ofSeconds(30))
+                .enableAllAdaptiveRefreshTriggers()
+                .build();
+        ClusterClientOptions clientOptions =
+                ClusterClientOptions.builder()
+                .topologyRefreshOptions(topologyRefreshOptions)
+                .build();
+
         LettuceClientConfiguration clientConfiguration = LettucePoolingClientConfiguration.builder()
                 .poolConfig(poolConfig)
                 .commandTimeout(Duration.ofMillis(500))
@@ -65,6 +77,7 @@ public class RedisClusterConfig {
                         .autoReconnect(true)
                         .build())
                 .shutdownTimeout(Duration.ofMillis(200))
+                .clientOptions(clientOptions)
                 .build();
 
         return new LettuceConnectionFactory(clusterConfiguration, clientConfiguration);

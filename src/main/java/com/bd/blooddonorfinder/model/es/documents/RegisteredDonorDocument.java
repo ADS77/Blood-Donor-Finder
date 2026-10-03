@@ -77,7 +77,7 @@ public class RegisteredDonorDocument {
 
     public static RegisteredDonorDocument from (UserRegisteredEvent event){
         RegisteredDonorDocument doc =  RegisteredDonorDocument.builder()
-                .id(String.valueOf(event.getUserId()))
+                .id(event.getUserId().toString())
                 .username(event.getUsername())
                 .email(event.getEmail())
                 .phoneNumber(event.getPhone())
@@ -95,7 +95,8 @@ public class RegisteredDonorDocument {
                 .version(event.getVersion())
                 .build();
         if(event.getLatitude() != null && event.getLongitude() != null){
-            doc.setLocation(new GeoPoint(event.getLatitude().doubleValue(), event.getLongitude().doubleValue()));
+            doc.setLocation(new GeoPoint(Double.valueOf(event.getLatitude().toString()),
+                    Double.valueOf(event.getLongitude().toString())));
         }
         return doc;
     }

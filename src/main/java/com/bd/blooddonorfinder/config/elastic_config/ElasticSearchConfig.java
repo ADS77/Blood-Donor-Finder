@@ -12,6 +12,8 @@ import org.elasticsearch.client.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 
 @Configuration
 //@EnableElasticsearchRepositories(basePackages = "com.bd.blooddonerfinder.model.es.documents")
@@ -56,5 +58,10 @@ public class ElasticSearchConfig {
             ElasticsearchTransport transport
     ) {
         return new ElasticsearchClient(transport);
+    }
+
+    @Bean
+    public ElasticsearchOperations elasticsearchTemplate(ElasticsearchClient elasticsearchClient) {
+        return new ElasticsearchTemplate(elasticsearchClient);
     }
 }

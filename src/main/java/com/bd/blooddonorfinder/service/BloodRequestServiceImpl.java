@@ -1,7 +1,7 @@
 package com.bd.blooddonorfinder.service;
 
 import com.bd.blooddonorfinder.model.BloodRequest;
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
 import com.bd.blooddonorfinder.payload.request.BloodRequestDto;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;

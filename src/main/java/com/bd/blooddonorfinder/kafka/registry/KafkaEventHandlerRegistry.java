@@ -37,13 +37,13 @@ public class KafkaEventHandlerRegistry {
     void logRegistered() {
         log.info("Registered {} event handlers: {}", handlers.size(), handlers.keySet());
         for(Map.Entry<String, KafkaEventHandler<?>> t : handlers.entrySet()){
-            log.info("eh key : {}, handler : {}", t.getKey(), t.getValue().eventClass());
+            log.info("Event handler key : {}, handler : {}", t.getKey(), t.getValue().getClass());
         }
     }
 
     public Optional<KafkaEventHandler<?>> resolve (String topicName){
         topicName = topicName+"."+topicVersion;
-        log.info("eh key:{}", topicName);
+        log.info("Event handler  key:{}", topicName);
         return  Optional.ofNullable(handlers.get(topicName));
     }
 

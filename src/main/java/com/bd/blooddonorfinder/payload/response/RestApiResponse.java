@@ -2,7 +2,6 @@ package com.bd.blooddonorfinder.payload.response;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -10,17 +9,14 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 public class RestApiResponse<T>  {
-    private T data;
-    private List<T> listData;
     private SuccessDetails<T> success;
     private HttpStatus status;
     private StatusCode statusCode;
     private String message;
-    private int totalCount;
     private ErrorDetails error;
 
     public static <T> RestApiResponse<T> of (T data){
-        RestApiResponse response = new RestApiResponse();
+        RestApiResponse<T> response = new RestApiResponse<T>();
         response.getSuccess().setData(data);
         return response;
     }
@@ -39,25 +35,23 @@ public class RestApiResponse<T>  {
 
     public static <T> RestApiResponse<T> success(T data, String message) {
         RestApiResponse<T> response = new RestApiResponse<>();
-        response.setData(data);
+        response.setSuccess(new SuccessDetails<>(data,message));
         response.setStatus(HttpStatus.OK);
         response.setMessage(message);
-        response.totalCount = 1;
         return response;
     }
 
     public static <T> RestApiResponse<T> success(List<T> listData, String message) {
         RestApiResponse<T> response = new RestApiResponse<>();
-        response.setListData(listData);
+        SuccessDetails<T> successDetails = new SuccessDetails<>(listData,message);
+        response.setSuccess(successDetails);
         response.setStatus(HttpStatus.OK);
         response.setMessage(message);
-        response.totalCount = listData.size();
         return response;
     }
 
     public static <T> RestApiResponse<T> success(int totalCount, String message, HttpStatus status){
         RestApiResponse<T> response = new RestApiResponse<>();
-        response.totalCount = totalCount;
         response.message = message;
         response.status = status;
         return response;

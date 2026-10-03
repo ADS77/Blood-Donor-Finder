@@ -1,5 +1,7 @@
 package com.bd.blooddonorfinder.model;
 
+import com.bd.blooddonorfinder.model.common.GeoLocation;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.BloodGroup;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -8,14 +10,15 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Data
 @Table(name = "blood_request")
 public class BloodRequest implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id", nullable = false)

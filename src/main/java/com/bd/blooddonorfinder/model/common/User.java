@@ -6,7 +6,6 @@ import com.bd.blooddonorfinder.payload.request.RegisterRequest;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -63,11 +62,11 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    @Column(name = "verified")
+    @Column(name = "is_verified")
     private Boolean isVerified;
 
     @Column(name = "is_active", nullable = false)
-    private boolean active;
+    private boolean isActive;
 
     @Column(name = "failed_otp_attempts", nullable = false)
     private int failedOtpAttempts;
@@ -135,15 +134,13 @@ public class User {
         user.setPassword(encodedPass);
         user.setPhoneToken(phoneToken);
         user.setEmailToken(emailToken);
-        user.setIsVerified(false);
-        user.setActive(true);
         user.setIsAvailable(true);
         user.setVersion(1L);
         return user;
     }
 
 
-    public void incrementFailedOtpAttempts() {
+    public synchronized void incrementFailedOtpAttempts() {
         this.failedOtpAttempts++;
     }
 

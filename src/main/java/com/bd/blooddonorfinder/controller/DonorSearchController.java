@@ -1,7 +1,7 @@
 package com.bd.blooddonorfinder.controller;
 
-import com.bd.blooddonorfinder.model.User;
-import com.bd.blooddonorfinder.model.common.ListResponse;
+import com.bd.blooddonorfinder.model.common.User;
+import com.bd.blooddonorfinder.payload.response.ListResponse;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.service.DonorSearchService;
@@ -25,7 +25,8 @@ public class DonorSearchController {
     private final DonorSearchService donorSearchService;
     private final NotificationManager notificationManager;
 
-    public DonorSearchController(DonorSearchService donorSearchService, NotificationManager notificationManager) {
+    public DonorSearchController(DonorSearchService donorSearchService,
+                                 NotificationManager notificationManager) {
         this.donorSearchService = donorSearchService;
         this.notificationManager = notificationManager;
     }

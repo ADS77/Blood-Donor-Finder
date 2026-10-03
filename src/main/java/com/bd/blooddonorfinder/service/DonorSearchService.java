@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.service;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
 
 import java.util.List;

@@ -23,8 +23,8 @@ public class Location implements Serializable {
     private String city;
     @Field(type = FieldType.Keyword)
     private String district;
-    private BigDecimal latitude;
-    private BigDecimal longitude;
+    private double latitude;
+    private double longitude;
     @Field(type = FieldType.Keyword)
     private String zipcode;
 }

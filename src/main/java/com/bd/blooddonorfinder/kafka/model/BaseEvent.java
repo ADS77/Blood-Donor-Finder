@@ -1,12 +1,13 @@
 package com.bd.blooddonorfinder.kafka.model;
 
-import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
+import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -23,8 +24,8 @@ public abstract class BaseEvent {
     private String causationId;
     private String source;
 
-    public BaseEvent(String eventId, KafkaTopics topic, String eventSource){
-        this.eventId = eventId;
+    public BaseEvent(KafkaTopics topic, String eventSource){
+        this.eventId = UUID.randomUUID().toString();
         this.topicName = topic.getTopicName();
         this.eventType = topic.name();
         this.eventTimeStamp = Instant.now();

@@ -1,6 +1,7 @@
-package com.bd.blooddonorfinder.utils.constants;
+package com.bd.blooddonorfinder.kafka.model.topic;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
+import com.bd.blooddonorfinder.kafka.model.events.UserGeoEnrichedEvent;
 import com.bd.blooddonorfinder.kafka.model.events.UserRegisteredEvent;
 import com.bd.blooddonorfinder.kafka.model.events.UserUpdateEvent;
 
@@ -9,7 +10,8 @@ import java.util.stream.Collectors;
 
 public enum KafkaTopics {
     USER_REGISTERED("user.registered", UserRegisteredEvent.class),
-    USER_UPDATE("user.updated", UserUpdateEvent.class);
+    USER_UPDATE("user.updated", UserUpdateEvent.class),
+    User_GEO_ENRICHED("user.geo.enriched", UserGeoEnrichedEvent.class);
 
     private final String topicName;
     private final Class<? extends BaseEvent> eventClass;

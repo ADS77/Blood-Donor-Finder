@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.payload.message;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;

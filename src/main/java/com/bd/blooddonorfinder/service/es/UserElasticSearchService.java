@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.service.es;
 
-import com.bd.blooddonorfinder.model.common.ListResponse;
+import com.bd.blooddonorfinder.payload.response.ListResponse;
 import com.bd.blooddonorfinder.model.es.SearchParam.UserSearchParams;
 import com.bd.blooddonorfinder.model.es.documents.DonorSearchDocument;
 

@@ -1,12 +1,10 @@
 package com.bd.blooddonorfinder.config.kafka_config;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
-import com.bd.blooddonorfinder.utils.KafkaUtils;
-import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
+import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.jackson.JsonObjectSerializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;

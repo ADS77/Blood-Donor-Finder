@@ -1,5 +1,6 @@
 package com.bd.blooddonorfinder.exception;
 
+import com.bd.blooddonorfinder.exception.enums.ErrorCode;
 import com.bd.blooddonorfinder.payload.response.ApiErrorResponse;
 import com.bd.blooddonorfinder.payload.response.ErrorDetails;
 import com.bd.blooddonorfinder.payload.response.ErrorResponse;
@@ -147,11 +148,10 @@ public class GlobalExceptionHandler {
     private HttpStatus mapErrorCodeToStatus(ErrorCode code) {
         return switch (code) {
             case USER_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case USER_ALREADY_EXISTS -> HttpStatus.CONFLICT;
-            case UNAUTHORIZED, REFRESH_REUSE_ATTACK -> HttpStatus.UNAUTHORIZED;
+            case USER_ALREADY_EXISTS_WITH_PHONE, USER_ALREADY_EXISTS_WITH_EMAIL -> HttpStatus.CONFLICT;
+            case UNAUTHORIZED, REFRESH_REUSE_ATTACK, TOKEN_EXPIRED, TOKEN_INVALID -> HttpStatus.UNAUTHORIZED;
             case RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
-            case ACCOUNT_LOCKED, ACCOUNT_NOT_VERIFIED -> HttpStatus.FORBIDDEN;
-            case TOKEN_EXPIRED, TOKEN_INVALID -> HttpStatus.UNAUTHORIZED;
+            case ACCOUNT_LOCKED, USER_NOT_VERIFIED -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

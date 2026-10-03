@@ -1,9 +1,8 @@
 package com.bd.blooddonorfinder.service;
 
-import com.bd.blooddonorfinder.model.GeoLocation;
-import com.bd.blooddonorfinder.model.GeoResponse;
-import com.bd.blooddonorfinder.model.User;
-import com.bd.blooddonorfinder.model.enums.Role;
+import com.bd.blooddonorfinder.model.common.GeoLocation;
+import com.bd.blooddonorfinder.payload.response.GeoResponse;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.utils.DonorUtils;

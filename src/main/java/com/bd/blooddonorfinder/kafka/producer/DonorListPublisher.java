@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.kafka.producer;
 
-import com.bd.blooddonorfinder.model.User;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.payload.message.DonorNotificationMessage;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;

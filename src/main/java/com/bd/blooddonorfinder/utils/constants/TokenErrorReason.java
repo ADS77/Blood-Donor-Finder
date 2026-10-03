@@ -1,4 +1,4 @@
-package com.bd.blooddonorfinder.utils.auth;
+package com.bd.blooddonorfinder.utils.constants;
 
 public enum TokenErrorReason {
     EXPIRED,

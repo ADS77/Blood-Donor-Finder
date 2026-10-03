@@ -1,6 +1,6 @@
 package com.bd.blooddonorfinder.utils;
 
-import com.bd.blooddonorfinder.utils.constants.KafkaTopics;
+import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 
 public class KafkaUtils {
     public static String buildTopicTypeMappings(){

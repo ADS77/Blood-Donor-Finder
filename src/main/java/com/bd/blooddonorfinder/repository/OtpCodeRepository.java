@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface OtpRepository extends JpaRepository<OtpCode, UUID> {
+public interface OtpCodeRepository extends JpaRepository<OtpCode, UUID> {
     @Query(
             """
                     SELECT o FROM OtpCode o
@@ -39,5 +39,17 @@ public interface OtpRepository extends JpaRepository<OtpCode, UUID> {
     void invalidatePreviousOtps(@Param("user") User user,
                                 @Param("purpose") OtpPurpose purpose,
                                 @Param("now") Instant now);
+
+    @Modifying
+    @Query("""
+    UPDATE OtpCode o
+       SET o.usedAt = :usedAt
+     WHERE o.id = :otpId
+       AND o.usedAt IS NULL
+       """)
+    int markAsUsed(
+            @Param("otpId") UUID otpId,
+            @Param("usedAt") Instant usedAt
+    );
 
 }

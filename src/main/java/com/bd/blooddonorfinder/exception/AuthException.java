@@ -1,5 +1,7 @@
 package com.bd.blooddonorfinder.exception;
 
+import com.bd.blooddonorfinder.exception.enums.ErrorCode;
+
 public class AuthException extends RuntimeException{
     private final ErrorCode errorCode;
 
