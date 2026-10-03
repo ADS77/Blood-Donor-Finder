@@ -6,12 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.UUID;
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
 public class VerifyOtpRequest {
         @NotNull(message = "user_id is required")
         @JsonProperty("user_id")

@@ -36,7 +36,7 @@ public class UserPrincipal implements UserDetails {
         return id;
     }
     public List<String>getAuthorityStrings(){
-        return (List<String>) authorityStrings;
+        return authorityStrings.stream().toList();
     }
     public boolean hasAuthority(String authority) {
         return authorityStrings.contains(authority);

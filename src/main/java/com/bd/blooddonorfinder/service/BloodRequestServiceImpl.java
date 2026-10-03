@@ -43,8 +43,8 @@ public class BloodRequestServiceImpl implements  BloodRequestService{
 
                 bloodRequestRepository.save(bloodRequest);
                 log.debug("Blood Request Created");
-                response.setData(bloodRequest);
-                response.setMessage("Blood Request Created");
+                response.getSuccess().setData(bloodRequest);
+                response.getSuccess().setMessage("Blood Request Created");
                 response.setStatus(HttpStatus.OK);
             }
             catch (Exception e){

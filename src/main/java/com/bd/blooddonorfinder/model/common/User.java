@@ -16,9 +16,9 @@ import java.util.*;
 
 @Entity
 @Table(name = "app_user")
+@NoArgsConstructor
 @Getter
 @Setter
-@NoArgsConstructor
 public class User {
 
     @Id

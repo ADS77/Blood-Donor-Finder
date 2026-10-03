@@ -107,7 +107,7 @@ public class UserServiceImpl implements UserService{
             auditService.log(AuditEvent.REGISTER, savedUser.getId(), ipAddress, userAgent);
             auditService.log(AuditEvent.OTP_SENT, savedUser.getId(), ipAddress, userAgent,
                     "{\"purpose\":\"REGISTER\"}");
-            return new OtpSentResponse(newUser.getId(),"OTP sent",ttl);
+            return new OtpSentResponse(savedUser.getId(),"OTP sent",ttl);
         }
         else {
             ErrorResponse errorResponse = new ErrorResponse();

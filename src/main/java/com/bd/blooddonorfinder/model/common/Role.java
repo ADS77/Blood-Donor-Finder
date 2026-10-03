@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.model.common;
 
 import jakarta.persistence.*;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -19,13 +20,16 @@ public class Role {
     @Column(length = 255)
     private String description;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "role_permissions",
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
     private Set<Permission> permissions = new HashSet<>();
+
+    @Column(name = "is_system", nullable = false, updatable = false)
+    private boolean system;
 
     public Role() {
     }
@@ -79,6 +83,11 @@ public class Role {
 
     public void removePermission(Permission permission) {
         this.permissions.remove(permission);
+    }
+
+    public void replacePermissions(Set<Permission> desired) {
+        permissions.clear();
+        permissions.addAll(desired);
     }
 
     @Override

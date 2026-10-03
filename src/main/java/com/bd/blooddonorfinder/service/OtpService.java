@@ -47,7 +47,6 @@ public class OtpService {
                       RedisTemplate<String, Object> redisTemplate,
                       NotificationManager notificationManager,
                       PiiService piiService,
-                      UserService userService,
                       UserRepository userRepository) {
         this.otpCodeRepository = otpCodeRepository;
         this.redisTemplate = redisTemplate;
@@ -67,8 +66,8 @@ public class OtpService {
         String otpHash = HashUtils.sha256Hex(plainOtp);
         Instant expiresAt = Instant.now().plusSeconds(OTP_TTL_SECONDS);
         otpCodeRepository.save(OtpCode.of(user,otpHash,purpose,expiresAt));
-        String otpStateKey = PREFIX_OTP_STATE + user.getId() + ":"+purpose.name();
-        redisTemplate.opsForValue().set(otpStateKey, 1, OTP_TTL_SECONDS, TimeUnit.SECONDS);
+        String redisOtpKey = PREFIX_OTP_STATE + user.getId() + ":"+purpose.name();
+        redisTemplate.opsForValue().set(redisOtpKey, 1, OTP_TTL_SECONDS, TimeUnit.SECONDS);
         if(MailUtils.isValidEmail(email)){
             try {
                 if( !notificationManager.notifyByMail(user, email, plainOtp,purpose.name())){

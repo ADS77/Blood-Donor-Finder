@@ -1,26 +1,24 @@
 package com.bd.blooddonorfinder.service.auth;
 
-import com.bd.blooddonorfinder.model.User;
-import com.bd.blooddonorfinder.model.enums.Role;
+import com.bd.blooddonorfinder.model.common.Role;
+import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.TokenType;
 import com.bd.blooddonorfinder.payload.response.TokenResponse;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.security.exception.InvalidJwtTokenException;
 import com.bd.blooddonorfinder.security.jwt.JwtTokenProvider;
-import com.bd.blooddonorfinder.utils.auth.TokenErrorReason;
+import com.bd.blooddonorfinder.utils.constants.TokenErrorReason;
 import io.jsonwebtoken.Claims;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -45,8 +43,9 @@ public class AuthenticationService {
     @Value("${security.jwt.refresh.token.validity}")
     private long refreshTokenValidity;
 
-    public TokenResponse login(String username, String password) throws InvalidJwtTokenException {
-        User user = userRepository.findByName(username.trim().toLowerCase())
+    @Transactional
+    public TokenResponse login(String phone, String ipAddress, String userAgent){
+        /*User user = userRepository.findByName(username.trim().toLowerCase())
                 .orElseThrow(()-> new UsernameNotFoundException("User not found : "+username));
 
         boolean validUser = user != null && passwordEncoder.matches(password, user.getPassword());
@@ -56,9 +55,10 @@ public class AuthenticationService {
         }
 
         List<String> roles = resolveRoles(user);
-        return  issueTokenPair(user.getName(), user.getId(), roles);
-    }
+        return  issueTokenPair(user.getName(), user.getId(), roles);*/
 
+        return  null;
+    }
     public void logout(String accessToken, String refreshToken) {
         revokeToken(accessToken);
         if (refreshToken != null) {
@@ -66,8 +66,10 @@ public class AuthenticationService {
         }
     }
 
+
+
     public TokenResponse refresh(String refreshTokenString) throws InvalidJwtTokenException {
-        Claims claims = tokenProvider.parseAndValidate(refreshTokenString);
+        Claims claims = tokenProvider.parseAndValidateClaims(refreshTokenString);
 
         TokenType type = tokenProvider.getTokenType(claims);
         if (type != TokenType.REFRESH_TOKEN) {
@@ -89,11 +91,12 @@ public class AuthenticationService {
 
         // Reload user and issue new pair
         String username = tokenProvider.getUsername(claims);
-        User user = userRepository.findByName(username)
+        User user = userRepository.findByFirstName(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         List<String> roles = resolveRoles(user);
-        return issueTokenPair(user.getName(), user.getId(), roles);
+        return  null;
+        //return tokenProvider.getTokenPair(user.getFirstName(), user.getId(), roles);
     }
 
     public void forceLogoutUser(String username) {
@@ -118,33 +121,12 @@ public class AuthenticationService {
         }
     }
 
-    private TokenResponse issueTokenPair(String username, Long userId, List<String> roles) throws InvalidJwtTokenException {
-        String accessToken = tokenProvider.createToken(username, userId, roles, TokenType.ACCESS_TOKEN);
-        String refreshToken = tokenProvider.createToken(username, userId, roles, TokenType.REFRESH_TOKEN);
 
-        Claims accessClaims  = tokenProvider.parseAndValidate(accessToken);
-        Claims refreshClaims = tokenProvider.parseAndValidate(refreshToken);
-
-        long accessTtl  = TimeUnit.SECONDS.toMillis(accessTokenValidity);
-        long refreshTtl = TimeUnit.SECONDS.toMillis(refreshTokenValidity);
-
-        tokenStorageService.whitelistAccessToken(accessClaims.getId(), username, accessTtl);
-        tokenStorageService.whitelistRefreshToken(refreshClaims.getId(), username, refreshTtl);
-        return TokenResponse.of(
-                accessToken,
-                refreshToken,
-                tokenProvider.getAccessTokenValiditySeconds(),
-                username,
-                roles);
-
-    }
-
-    // To-DO : need to adopt User entity's role model.
     private List<String> resolveRoles(User user) {
         return Optional.ofNullable(user.getRoles())
                 .orElse(Collections.emptySet())
                 .stream()
-                .map(Role::name)
+                .map(Role::getName)
                 .toList();
     }
 }

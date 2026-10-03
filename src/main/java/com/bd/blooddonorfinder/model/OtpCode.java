@@ -12,10 +12,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "otp_codes")
 public class OtpCode {
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "purpose", columnDefinition = "otp_purpose")
-    private OtpPurpose purpose;
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,6 +34,11 @@ public class OtpCode {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "purpose", columnDefinition = "otp_purpose")
+    private OtpPurpose purpose;
 
     protected OtpCode() {}
 

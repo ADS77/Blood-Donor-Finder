@@ -46,7 +46,7 @@ public class DonorSearchController {
         eligibleDonorList.setTime(stopWatch.getTotalTimeMillis());
         eligibleDonorList.setCount(eligibleDonors.size());
         RestApiResponse<ListResponse<User>> apiResponse = new RestApiResponse<>();
-        apiResponse.setData(eligibleDonorList);
+        apiResponse.getSuccess().setData(eligibleDonorList);
         return ResponseEntity.ok().body(apiResponse);
     }
     @GetMapping("/notify-near-by-donors")
