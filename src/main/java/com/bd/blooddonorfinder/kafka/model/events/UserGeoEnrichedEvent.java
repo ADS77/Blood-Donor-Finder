@@ -21,7 +21,7 @@ public class UserGeoEnrichedEvent extends BaseEvent {
     private BigDecimal longitude;
     private GeoStatus geoStatus;
     public UserGeoEnrichedEvent(){
-        super(KafkaTopics.User_GEO_ENRICHED, "UserGeoEnrichmentEvent");
+        super(KafkaTopics.USER_GEO_ENRICHED, "UserGeoEnrichmentEvent");
     }
     public static UserGeoEnrichedEvent from(User user, GeoResponse geoResponse){
         UserGeoEnrichedEvent event = new UserGeoEnrichedEvent();

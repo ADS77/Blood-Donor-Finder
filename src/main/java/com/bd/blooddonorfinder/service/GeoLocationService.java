@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.service;
 
 import com.bd.blooddonorfinder.exception.GeoLocationException;
 import com.bd.blooddonorfinder.payload.response.GeoResponse;
+import com.bd.blooddonorfinder.utils.constants.RedisCacheKey;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -36,8 +37,8 @@ public class GeoLocationService {
     }
 
     @Cacheable(
-            value = "geolocations",
-            key = "#city",
+            value = RedisCacheKey.GEOLOCATIONS,
+            key = "#city.trim().toLowerCase()",
             sync = true
     )
     public GeoResponse getLatLong(String city){

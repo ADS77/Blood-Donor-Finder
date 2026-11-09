@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.service;
 
 import com.bd.blooddonorfinder.payload.request.MailAttachment;
 import com.bd.blooddonorfinder.payload.request.SendMailRequest;
+import com.bd.blooddonorfinder.utils.MailUtils;
 import jakarta.activation.DataSource;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
@@ -25,6 +26,7 @@ public class MailServiceImpl implements MailService{
 
     @Override
     public boolean sendMail(SendMailRequest mailRequest) {
+        log.debug("Sending email to: {}", MailUtils.maskEmail(mailRequest.getMailTo().get(0)));
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
@@ -53,10 +55,10 @@ public class MailServiceImpl implements MailService{
             }
 
             mailSender.send(mimeMessage);
-            log.info("Mail sent successfully...............");
+            log.info("..................Mail sent successfully...............");
             return  true;
         } catch (MessagingException e) {
-            log.error("Error sending email to : {}, cause : {}",mailRequest.getMailTo(),e.getCause());
+            log.error("...........Error sending email to : {}, cause : {}..............",MailUtils.maskEmail(mailRequest.getMailTo().get(0)),e.getCause());
             e.printStackTrace();
             return false;
         }

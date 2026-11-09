@@ -171,6 +171,25 @@ public class MailUtils {
         );
     }
 
+    public static String maskEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return "*****";
+        }
+        int atIndex = email.indexOf('@');
+        if (atIndex <= 0) {
+            return email.length() <= 5
+                    ? "*****"
+                    : email.substring(0, 5) + "*".repeat(email.length() - 5);
+        }
+        String localPart = email.substring(0, atIndex);
+        String domain = email.substring(atIndex);
+        if (localPart.length() <= 5) {
+            return "*****" + domain;
+        }
+        return localPart.substring(0, 5)
+                + "*".repeat(localPart.length() - 5)
+                + domain;
+    }
 
 
 

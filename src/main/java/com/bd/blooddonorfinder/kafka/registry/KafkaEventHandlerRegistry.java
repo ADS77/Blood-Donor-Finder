@@ -37,7 +37,7 @@ public class KafkaEventHandlerRegistry {
     void logRegistered() {
         log.info("Registered {} event handlers: {}", handlers.size(), handlers.keySet());
         for(Map.Entry<String, KafkaEventHandler<?>> t : handlers.entrySet()){
-            log.info("Event handler key : {}, handler : {}", t.getKey(), t.getValue().getClass());
+            log.info("Event handler key : {}, handler : {}", t.getKey(), t.getValue().getClass().getSimpleName());
         }
     }
 

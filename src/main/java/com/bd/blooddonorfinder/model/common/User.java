@@ -148,7 +148,7 @@ public class User {
         this.failedOtpAttempts = 0;
     }
 
-    public void lockUntil(Instant until) {
+    public synchronized void lockUntil(Instant until) {
         this.lockedUntil = until;
     }
 

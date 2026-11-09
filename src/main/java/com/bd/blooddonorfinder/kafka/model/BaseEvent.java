@@ -32,7 +32,7 @@ public abstract class BaseEvent {
         this.retryCount = 0;
         this.source = eventSource;
     }
-    public void incrementRetryCount() {
+    public synchronized void incrementRetryCount() {
         this.retryCount++;
     }
 

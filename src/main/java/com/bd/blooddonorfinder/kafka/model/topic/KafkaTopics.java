@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public enum KafkaTopics {
     USER_REGISTERED("user.registered", UserRegisteredEvent.class),
     USER_UPDATE("user.updated", UserUpdateEvent.class),
-    User_GEO_ENRICHED("user.geo.enriched", UserGeoEnrichedEvent.class);
+    USER_GEO_ENRICHED("user.geo.enriched", UserGeoEnrichedEvent.class);
 
     private final String topicName;
     private final Class<? extends BaseEvent> eventClass;

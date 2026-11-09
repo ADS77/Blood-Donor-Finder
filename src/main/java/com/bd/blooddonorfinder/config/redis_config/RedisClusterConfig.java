@@ -61,24 +61,28 @@ public class RedisClusterConfig {
                 .enablePeriodicRefresh(Duration.ofSeconds(30))
                 .enableAllAdaptiveRefreshTriggers()
                 .build();
+
         ClusterClientOptions clientOptions =
                 ClusterClientOptions.builder()
-                .topologyRefreshOptions(topologyRefreshOptions)
-                .build();
-
-        LettuceClientConfiguration clientConfiguration = LettucePoolingClientConfiguration.builder()
-                .poolConfig(poolConfig)
-                .commandTimeout(Duration.ofMillis(500))
-                .clientOptions(ClientOptions.builder()
-                        .socketOptions(SocketOptions.builder()
-                                .connectTimeout(Duration.ofSeconds(1))
-                                .build())
-                        .timeoutOptions(TimeoutOptions.enabled(Duration.ofMillis(500)))
+                        .topologyRefreshOptions(topologyRefreshOptions)
+                        .socketOptions(
+                                SocketOptions.builder()
+                                        .connectTimeout(Duration.ofSeconds(1))
+                                        .build()
+                        )
+                        .timeoutOptions(
+                                TimeoutOptions.enabled(Duration.ofMillis(500))
+                        )
                         .autoReconnect(true)
-                        .build())
-                .shutdownTimeout(Duration.ofMillis(200))
-                .clientOptions(clientOptions)
-                .build();
+                        .build();
+
+        LettuceClientConfiguration clientConfiguration =
+                LettucePoolingClientConfiguration.builder()
+                        .poolConfig(poolConfig)
+                        .commandTimeout(Duration.ofMillis(500))
+                        .clientOptions(clientOptions)
+                        .shutdownTimeout(Duration.ofMillis(200))
+                        .build();
 
         return new LettuceConnectionFactory(clusterConfiguration, clientConfiguration);
     }

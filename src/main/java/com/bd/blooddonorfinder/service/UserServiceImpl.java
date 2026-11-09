@@ -249,6 +249,9 @@ public class UserServiceImpl implements UserService{
         user.markVerified();
         user.resetFailedOtpAttempts();
         user.addRole(defaultRole);
+        User geoEnhancedUser = getGeoEnhancedUser(user);
+        UserRegisteredEvent event = UserRegisteredEvent.from(geoEnhancedUser);
+        publishAfterCommit(event);
         return user;
     }
 
@@ -284,7 +287,7 @@ public class UserServiceImpl implements UserService{
                         @Override
                         public void afterCommit() {
                             eventProducer.publishEvent(event);
-                            log.info("Published event after commit: eventId={}, aggregateId={}",
+                            log.info("User register event published after commit: eventId={}, aggregateId={}",
                                     event.getEventId(), event.getAggregateId());
                         }
                     }

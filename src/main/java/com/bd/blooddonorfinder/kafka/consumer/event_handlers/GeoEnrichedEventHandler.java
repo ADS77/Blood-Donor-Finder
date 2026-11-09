@@ -29,7 +29,7 @@ public class GeoEnrichedEventHandler extends AbstractSyncHandler<UserGeoEnriched
 
     @Override
     public String topicName() {
-        return KafkaTopics.User_GEO_ENRICHED.getTopicName()+'.'+topicVersion;
+        return KafkaTopics.USER_GEO_ENRICHED.getTopicName()+'.'+topicVersion;
     }
 
     @Override

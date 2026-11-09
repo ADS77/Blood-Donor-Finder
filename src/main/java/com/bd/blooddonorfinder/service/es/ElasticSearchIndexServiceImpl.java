@@ -36,16 +36,16 @@ public class ElasticSearchIndexServiceImpl implements ElasticSearchIndexService{
 
     @Override
     public void indexRegisteredDonor(UserRegisteredEvent event) {
-        log.info("Indexing registered donor to elastic: userId={}, eventId={}"
+        log.info("..........Indexing registered donor to elastic: userId={}, eventId={} ........"
                 ,event.getAggregateId(), event.getEventId() );
         try {
             RegisteredDonorDocument donorDocument = RegisteredDonorDocument.from(event);
             if(donorDocumentRepository.findById(event.getUserId().toString()).isPresent()){
-                log.debug("Skip indexing, donor exists with id:{}",event.getUserId());
+                log.debug("...........Skip indexing, donor exists with id:{}............",event.getUserId());
                 return ;
             }
             RegisteredDonorDocument savedDocument = donorDocumentRepository.save(donorDocument);
-            log.info("Successfully indexed user: userId={}, esId={}",
+            log.info("..........Successfully indexed user: userId={}, esId={}.................",
                     event.getUserId(), savedDocument.getId());
         }catch (Exception e){
             log.error("Failed to index user: userId={}, error={}",
