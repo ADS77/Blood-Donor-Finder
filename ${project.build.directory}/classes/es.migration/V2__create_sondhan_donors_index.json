@@ -1,0 +1,39 @@
+{
+  "description": "Create sondhan_donors index with geo_point mapping and shard-by-blood-group strategy",
+  "index": "sondhan_donors",
+  "action": "create_index",
+  "body": {
+    "settings": {
+      "number_of_shards": 8,
+      "number_of_replicas": 1,
+      "routing.allocation.include._tier_preference": "data_content",
+      "index": {
+        "refresh_interval": "1s",
+        "max_result_window": 50
+      }
+    },
+    "mappings": {
+      "properties": {
+        "donor_id":                    { "type": "keyword" },
+        "blood_group":                 { "type": "keyword" },
+        "location":                    { "type": "geo_point" },
+        "is_available":                { "type": "boolean" },
+        "is_eligible":                 { "type": "boolean" },
+        "is_verified":                 { "type": "boolean" },
+        "trust_score":                 { "type": "float" },
+        "total_donations":             { "type": "integer" },
+        "donation_frequency":          { "type": "float" },
+        "availability_reliability":    { "type": "float" },
+        "org_id":                      { "type": "keyword" },
+        "has_unresolved_abuse_report": { "type": "boolean" },
+        "availability_stale":          { "type": "boolean" },
+        "org_boundary":                { "type": "geo_shape" },
+        "masked_contact_id":           { "type": "keyword" },
+        "last_active_at":              { "type": "date", "format": "strict_date_time" },
+        "last_donation_at":            { "type": "date", "format": "strict_date_time" },
+        "availability_stale_at":       {"type": "date", "format": "strict_date_time"},
+        "updated_at":                  { "type": "date", "format": "strict_date_time" }
+      }
+    }
+  }
+}

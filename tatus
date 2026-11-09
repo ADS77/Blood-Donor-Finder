@@ -1,0 +1,92 @@
+[1mdiff --git a/Docker/docker-compose.yml b/Docker/docker-compose.yml[m
+[1mindex 8a91947..da0a279 100644[m
+[1m--- a/Docker/docker-compose.yml[m
+[1m+++ b/Docker/docker-compose.yml[m
+[36m@@ -24,7 +24,7 @@[m [mservices:[m
+       POSTGRES_USER: user[m
+       POSTGRES_PASSWORD: password[m
+     ports:[m
+[31m-      - "5432:5432"[m
+[32m+[m[32m      - "5435:5432"[m
+     volumes:[m
+       - postgres-data:/var/lib/postgresql/data[m
+ [m
+[1mdiff --git a/pom.xml b/pom.xml[m
+[1mindex 8f2c9f5..b59067b 100644[m
+[1m--- a/pom.xml[m
+[1m+++ b/pom.xml[m
+[36m@@ -30,6 +30,14 @@[m
+         <java.version>17</java.version>[m
+     </properties>[m
+     <dependencies>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m            <artifactId>spring-boot-starter-security</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.security</groupId>[m
+[32m+[m[32m            <artifactId>spring-security-taglibs</artifactId>[m
+[32m+[m[32m        </dependency>[m
+         <dependency>[m
+             <groupId>org.springframework.boot</groupId>[m
+             <artifactId>spring-boot-starter-data-jpa</artifactId>[m
+[36m@@ -94,6 +102,21 @@[m
+         <artifactId>spring-kafka-test</artifactId>[m
+         <scope>test</scope>[m
+         </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.projectlombok</groupId>[m
+[32m+[m[32m            <artifactId>lombok</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.sonatype.sisu</groupId>[m
+[32m+[m[32m            <artifactId>sisu-guice</artifactId>[m
+[32m+[m[32m            <version>2.1.7</version>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>com.google.guava</groupId>[m
+[32m+[m[32m            <artifactId>guava</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m
+ [m
+     </dependencies>[m
+ [m
+[36m@@ -124,6 +147,14 @@[m
+ <!--                    </excludes>-->[m
+ <!--                </configuration>-->[m
+             </plugin>[m
+[32m+[m[32m            <plugin>[m
+[32m+[m[32m                <artifactId>maven-compiler-plugin</artifactId>[m
+[32m+[m[32m                <groupId>org.apache.maven.plugins</groupId>[m
+[32m+[m[32m                <configuration>[m
+[32m+[m[32m                    <source>16</source>[m
+[32m+[m[32m                    <target>16</target>[m
+[32m+[m[32m                </configuration>[m
+[32m+[m[32m            </plugin>[m
+ [m
+         </plugins>[m
+     </build>[m
+[1mdiff --git a/src/main/java/com/bd/blooddonerfinder/UserNotFountException.java b/src/main/java/com/bd/blooddonerfinder/UserNotFountException.java[m
+[1mindex a14da87..0e2aeb2 100644[m
+[1m--- a/src/main/java/com/bd/blooddonerfinder/UserNotFountException.java[m
+[1m+++ b/src/main/java/com/bd/blooddonerfinder/UserNotFountException.java[m
+[36m@@ -1,2 +1,7 @@[m
+[31m-package com.bd.blooddonorfinder;public class UserNotFountException {[m
+[32m+[m[32mpackage com.bd.blooddonorfinder;[m
+[32m+[m
+[32m+[m[32mpublic class UserNotFountException extends RuntimeException {[m
+[32m+[m[32m    public UserNotFountException(String message){[m
+[32m+[m[32m        super(message);[m
+[32m+[m[32m    }[m
+ }[m
+[1mdiff --git a/src/main/java/com/bd/blooddonerfinder/auth/SecurityConstants.java b/src/main/java/com/bd/blooddonerfinder/auth/SecurityConstants.java[m
+[1mindex 1083a63..bd50d82 100644[m
+[1m--- a/src/main/java/com/bd/blooddonerfinder/auth/SecurityConstants.java[m
+[1m+++ b/src/main/java/com/bd/blooddonerfinder/auth/SecurityConstants.java[m
+[36m@@ -1,2 +1,9 @@[m
+[31m-package com.bd.blooddonorfinder.security;public class SecurityConstants {[m
+[32m+[m[32mpackage com.bd.blooddonorfinder.security;[m
+[32m+[m
+[32m+[m[32mpublic class SecurityConstants {[m
+[3
