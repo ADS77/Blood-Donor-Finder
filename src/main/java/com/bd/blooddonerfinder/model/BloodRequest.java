@@ -25,7 +25,7 @@ public class BloodRequest implements Serializable {
     private LocalDateTime requestTime;
 
     @Embedded
-    private Location location;
+    private GeoLocation geoLocation;
 
     private RequestStatus status;
 

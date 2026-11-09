@@ -24,7 +24,7 @@ public class MailUtils {
                 .matches();
     }
 
-    public static String buildHtmlBody(String recipientName, String location, String phoneNumber, String organizationName) {
+    public static String buildHtmlBody(String recipientName, String geoLocation, String phoneNumber, String organizationName) {
             return String.format("""
             <p>Dear %s,</p>
             
@@ -40,8 +40,8 @@ public class MailUtils {
             %s</p>
             """,
                     safeNull(recipientName, "Donor"),
-                    safeNull(location, "our center"),
-                    safeNull(location, "our center"),
+                    safeNull(geoLocation, "our center"),
+                    safeNull(geoLocation, "our center"),
                     safeNull(phoneNumber, "N/A"),
                     safeNull(organizationName, "Blood Donation Team")
             );

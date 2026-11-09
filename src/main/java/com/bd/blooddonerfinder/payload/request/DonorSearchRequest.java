@@ -1,6 +1,6 @@
 package com.bd.blooddonerfinder.payload.request;
 
-import com.bd.blooddonerfinder.model.Location;
+import com.bd.blooddonerfinder.model.GeoLocation;
 import com.bd.blooddonerfinder.model.enums.BloodGroup;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,7 +12,7 @@ import lombok.ToString;
 @ToString
 @EqualsAndHashCode
 public class DonorSearchRequest {
-    private Location location;
+    private GeoLocation geoLocation;
     private BloodGroup bloodGroup;
     private double radius;
     private  String receiverEmail;

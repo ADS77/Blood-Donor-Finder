@@ -36,18 +36,18 @@ public class User {
     private LocalDate lastDonationDate;
 
     @Embedded
-    private Location location;
+    private GeoLocation geoLocation;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public User(String name, String email, String phone, BloodGroup bloodGroup, Role role, Location location) {
+    public User(String name, String email, String phone, BloodGroup bloodGroup, Role role, GeoLocation geoLocation) {
         this.name = name;
         this.email = email;
         this.phone = phone;
         this.bloodGroup = bloodGroup;
         this.role = role;
-        this.location = location;
+        this.geoLocation = geoLocation;
     }
 
     @Override
@@ -55,11 +55,11 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return Objects.equals(id, user.id) && Objects.equals(name, user.name) && Objects.equals(email, user.email) && Objects.equals(phone, user.phone) && bloodGroup == user.bloodGroup && role == user.role && Objects.equals(isVerified, user.isVerified) && Objects.equals(isAvailable, user.isAvailable) && Objects.equals(lastDonationDate, user.lastDonationDate) && Objects.equals(location, user.location) && Objects.equals(createdAt, user.createdAt);
+        return Objects.equals(id, user.id) && Objects.equals(name, user.name) && Objects.equals(email, user.email) && Objects.equals(phone, user.phone) && bloodGroup == user.bloodGroup && role == user.role && Objects.equals(isVerified, user.isVerified) && Objects.equals(isAvailable, user.isAvailable) && Objects.equals(lastDonationDate, user.lastDonationDate) && Objects.equals(geoLocation, user.geoLocation) && Objects.equals(createdAt, user.createdAt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, email, phone, bloodGroup, role, isVerified, isAvailable, lastDonationDate, location, createdAt);
+        return Objects.hash(id, name, email, phone, bloodGroup, role, isVerified, isAvailable, lastDonationDate, geoLocation, createdAt);
     }
 }
