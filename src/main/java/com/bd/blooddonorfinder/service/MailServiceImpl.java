@@ -1,0 +1,66 @@
+package com.bd.blooddonorfinder.service;
+
+import com.bd.blooddonorfinder.payload.request.MailAttachment;
+import com.bd.blooddonorfinder.payload.request.SendMailRequest;
+import com.bd.blooddonorfinder.utils.MailUtils;
+import jakarta.activation.DataSource;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+import java.util.Map;
+
+@Service
+@Slf4j
+public class MailServiceImpl implements MailService{
+    private final JavaMailSender mailSender;
+
+    public MailServiceImpl(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+
+    @Override
+    public boolean sendMail(SendMailRequest mailRequest) {
+        log.debug("Sending email to: {}", MailUtils.maskEmail(mailRequest.getMailTo().get(0)));
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
+            helper.setFrom(new InternetAddress(mailRequest.getMailFrom()));
+            helper.setTo(mailRequest.getMailTo().toArray(new String[0]));
+
+            if (mailRequest.getMailCc() != null && !mailRequest.getMailCc().isEmpty()) {
+                helper.setCc(mailRequest.getMailCc().toArray(new String[0]));
+            }
+            if (mailRequest.getMailBcc() != null && !mailRequest.getMailBcc().isEmpty()) {
+                helper.setBcc(mailRequest.getMailBcc().toArray(new String[0]));
+            }
+
+            helper.setSubject(mailRequest.getSubject());
+            helper.setText(mailRequest.getBody(), mailRequest.isHtmlContent());
+
+            if (mailRequest.getAttachments() != null && !mailRequest.getAttachments().isEmpty()) {
+                for (MailAttachment attachment : mailRequest.getAttachments()) {
+                    helper.addAttachment(attachment.getAttachmentName(), (DataSource) attachment.getDataSource());
+                }
+            }
+            if (mailRequest.getInlineImages() != null && !mailRequest.getInlineImages().isEmpty()) {
+                for (Map.Entry<String, MailAttachment> entry : mailRequest.getInlineImages().entrySet()) {
+                    helper.addInline(entry.getKey(), (DataSource) entry.getValue().getDataSource());
+                }
+            }
+
+            mailSender.send(mimeMessage);
+            log.info("..................Mail sent successfully...............");
+            return  true;
+        } catch (MessagingException e) {
+            log.error("...........Error sending email to : {}, cause : {}..............",MailUtils.maskEmail(mailRequest.getMailTo().get(0)),e.getCause());
+            e.printStackTrace();
+            return false;
+        }
+    }
+}
