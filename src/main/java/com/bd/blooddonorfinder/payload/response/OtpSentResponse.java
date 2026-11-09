@@ -1,0 +1,19 @@
+package com.bd.blooddonorfinder.payload.response;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.UUID;
+
+public record OtpSentResponse(
+        @JsonProperty("user_id")
+        UUID userId,
+        String message,
+        @JsonProperty("otp_expires_in_seconds")
+        int otpExpiresInSeconds,
+        @JsonProperty("error_response")
+        ErrorResponse errorResponse
+) {
+        public OtpSentResponse(UUID id, String msg, int ttl) {
+                this(id, msg, ttl, null);
+        }
+}
