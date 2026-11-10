@@ -197481,3 +197481,1134 @@
 2026-11-09 16:39:52,524 INFO  org.apache.kafka.common.metrics.Metrics - Metrics reporters closed
 2026-11-09 16:39:52,533 INFO  org.apache.kafka.common.utils.AppInfoParser - App info kafka.consumer for consumer-sondhan-consumer-group-4 unregistered
 2026-11-09 16:39:52,540 INFO  org.apache.kafka.common.utils.AppInfoParser - App info kafka.consumer for consumer-sondhan-consumer-group-1 unregistered
+2026-11-11 04:26:11,770 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-1
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:11,822 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:11,975 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:11,975 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:11,975 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349571973
+2026-11-11 04:26:11,978 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Subscribed to topic(s): user.registered.V2, user.updated.V2, user.deleted.V2
+2026-11-11 04:26:11,984 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-2
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:11,985 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:11,995 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:11,996 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:11,996 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349571995
+2026-11-11 04:26:11,996 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Subscribed to topic(s): user.registered.V2, user.updated.V2, user.deleted.V2
+2026-11-11 04:26:11,998 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-3
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:11,998 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:12,008 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:12,008 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:12,008 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349572007
+2026-11-11 04:26:12,008 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Subscribed to topic(s): user.registered.V2, user.updated.V2, user.deleted.V2
+2026-11-11 04:26:12,012 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-4
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:12,012 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:12,021 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:12,021 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:12,022 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349572021
+2026-11-11 04:26:12,022 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Subscribed to topic(s): blood-donor-notifications
+2026-11-11 04:26:12,025 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-5
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:12,025 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:12,036 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:12,036 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:12,036 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349572036
+2026-11-11 04:26:12,037 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Subscribed to topic(s): blood-donor-notifications
+2026-11-11 04:26:12,040 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-6
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:12,040 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:12,047 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:12,047 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:12,047 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349572047
+2026-11-11 04:26:12,048 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Subscribed to topic(s): blood-donor-notifications
+2026-11-11 04:26:12,050 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-7
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:12,051 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:12,057 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:12,057 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:12,057 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349572057
+2026-11-11 04:26:12,057 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Subscribed to topic(s): user.geo.enriched.V2
+2026-11-11 04:26:12,059 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-8
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:12,059 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:12,066 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:12,066 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:12,066 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349572066
+2026-11-11 04:26:12,066 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Subscribed to topic(s): user.geo.enriched.V2
+2026-11-11 04:26:12,068 INFO  org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:9092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-sondhan-consumer-group-9
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1024
+	group.id = sondhan-consumer-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 100
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+
+2026-11-11 04:26:12,069 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:26:12,075 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:26:12,075 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:26:12,075 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349572075
+2026-11-11 04:26:12,075 INFO  org.apache.kafka.clients.consumer.internals.LegacyKafkaConsumer - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Subscribed to topic(s): user.geo.enriched.V2
+2026-11-11 04:26:12,482 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,482 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,484 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,484 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,485 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,485 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,485 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,485 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,482 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,483 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,486 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,487 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,483 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,488 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,483 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,485 INFO  org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:26:12,489 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,490 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Discovered group coordinator localhost:9092 (id: 2147483646 rack: null)
+2026-11-11 04:26:12,490 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,493 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,493 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,490 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,493 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,493 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,493 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,493 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,494 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,517 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-1-06c59fc4-fb09-42b1-8ca7-33929591c7d3
+2026-11-11 04:26:12,517 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,520 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-9-a41e121e-b194-4c2e-ad7e-94c6c88c54fd
+2026-11-11 04:26:12,520 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,523 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-6-deb0f083-5be9-48d3-a0b3-c519431943fc
+2026-11-11 04:26:12,523 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,524 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-4-d3d44853-b30c-4297-8530-0fe22f390c31
+2026-11-11 04:26:12,524 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-7-17884bc3-ba48-4485-b98d-c3644bfeac3d
+2026-11-11 04:26:12,524 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,524 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,524 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-5-d42cc3cf-aaad-4a09-9927-a26f1c8f701c
+2026-11-11 04:26:12,527 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,526 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-8-f28f035b-ad7f-4f36-8e0e-47768af1994b
+2026-11-11 04:26:12,530 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,533 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-2-18ff82f0-7c53-403f-aac1-bc37c0d192dd
+2026-11-11 04:26:12,534 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:12,535 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Request joining group due to: need to re-join with the given member-id: consumer-sondhan-consumer-group-3-16ce5231-83d5-4629-8a5f-a7989b224c72
+2026-11-11 04:26:12,535 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] (Re-)joining group
+2026-11-11 04:26:15,521 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-5-d42cc3cf-aaad-4a09-9927-a26f1c8f701c', protocol='range'}
+2026-11-11 04:26:15,522 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-4-d3d44853-b30c-4297-8530-0fe22f390c31', protocol='range'}
+2026-11-11 04:26:15,523 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-3-16ce5231-83d5-4629-8a5f-a7989b224c72', protocol='range'}
+2026-11-11 04:26:15,523 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-2-18ff82f0-7c53-403f-aac1-bc37c0d192dd', protocol='range'}
+2026-11-11 04:26:15,523 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-9-a41e121e-b194-4c2e-ad7e-94c6c88c54fd', protocol='range'}
+2026-11-11 04:26:15,524 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-8-f28f035b-ad7f-4f36-8e0e-47768af1994b', protocol='range'}
+2026-11-11 04:26:15,526 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-7-17884bc3-ba48-4485-b98d-c3644bfeac3d', protocol='range'}
+2026-11-11 04:26:15,527 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-6-deb0f083-5be9-48d3-a0b3-c519431943fc', protocol='range'}
+2026-11-11 04:26:15,527 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Successfully joined group with generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-1-06c59fc4-fb09-42b1-8ca7-33929591c7d3', protocol='range'}
+2026-11-11 04:26:15,544 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Finished assignment for group at generation 3: {consumer-sondhan-consumer-group-5-d42cc3cf-aaad-4a09-9927-a26f1c8f701c=Assignment(partitions=[]), consumer-sondhan-consumer-group-1-06c59fc4-fb09-42b1-8ca7-33929591c7d3=Assignment(partitions=[user.updated.V2-0, user.deleted.V2-0, user.registered.V2-0]), consumer-sondhan-consumer-group-6-deb0f083-5be9-48d3-a0b3-c519431943fc=Assignment(partitions=[]), consumer-sondhan-consumer-group-9-a41e121e-b194-4c2e-ad7e-94c6c88c54fd=Assignment(partitions=[]), consumer-sondhan-consumer-group-4-d3d44853-b30c-4297-8530-0fe22f390c31=Assignment(partitions=[blood-donor-notifications-0]), consumer-sondhan-consumer-group-3-16ce5231-83d5-4629-8a5f-a7989b224c72=Assignment(partitions=[]), consumer-sondhan-consumer-group-2-18ff82f0-7c53-403f-aac1-bc37c0d192dd=Assignment(partitions=[]), consumer-sondhan-consumer-group-8-f28f035b-ad7f-4f36-8e0e-47768af1994b=Assignment(partitions=[]), consumer-sondhan-consumer-group-7-17884bc3-ba48-4485-b98d-c3644bfeac3d=Assignment(partitions=[user.geo.enriched.V2-0])}
+2026-11-11 04:26:15,551 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-5-d42cc3cf-aaad-4a09-9927-a26f1c8f701c', protocol='range'}
+2026-11-11 04:26:15,552 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[])
+2026-11-11 04:26:15,553 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-7-17884bc3-ba48-4485-b98d-c3644bfeac3d', protocol='range'}
+2026-11-11 04:26:15,554 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-3-16ce5231-83d5-4629-8a5f-a7989b224c72', protocol='range'}
+2026-11-11 04:26:15,554 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[user.geo.enriched.V2-0])
+2026-11-11 04:26:15,554 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[])
+2026-11-11 04:26:15,554 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-5, groupId=sondhan-consumer-group] Adding newly assigned partitions: 
+2026-11-11 04:26:15,553 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-2-18ff82f0-7c53-403f-aac1-bc37c0d192dd', protocol='range'}
+2026-11-11 04:26:15,553 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-9-a41e121e-b194-4c2e-ad7e-94c6c88c54fd', protocol='range'}
+2026-11-11 04:26:15,555 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[])
+2026-11-11 04:26:15,555 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[])
+2026-11-11 04:26:15,555 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-2, groupId=sondhan-consumer-group] Adding newly assigned partitions: 
+2026-11-11 04:26:15,555 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-9, groupId=sondhan-consumer-group] Adding newly assigned partitions: 
+2026-11-11 04:26:15,555 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-6-deb0f083-5be9-48d3-a0b3-c519431943fc', protocol='range'}
+2026-11-11 04:26:15,556 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[])
+2026-11-11 04:26:15,556 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-6, groupId=sondhan-consumer-group] Adding newly assigned partitions: 
+2026-11-11 04:26:15,553 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-8-f28f035b-ad7f-4f36-8e0e-47768af1994b', protocol='range'}
+2026-11-11 04:26:15,556 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[])
+2026-11-11 04:26:15,556 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-8, groupId=sondhan-consumer-group] Adding newly assigned partitions: 
+2026-11-11 04:26:15,552 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-1-06c59fc4-fb09-42b1-8ca7-33929591c7d3', protocol='range'}
+2026-11-11 04:26:15,556 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[user.updated.V2-0, user.deleted.V2-0, user.registered.V2-0])
+2026-11-11 04:26:15,553 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Successfully synced group in generation Generation{generationId=3, memberId='consumer-sondhan-consumer-group-4-d3d44853-b30c-4297-8530-0fe22f390c31', protocol='range'}
+2026-11-11 04:26:15,558 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Notifying assignor about the new Assignment(partitions=[blood-donor-notifications-0])
+2026-11-11 04:26:15,561 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Adding newly assigned partitions: user.geo.enriched.V2-0
+2026-11-11 04:26:15,554 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-3, groupId=sondhan-consumer-group] Adding newly assigned partitions: 
+2026-11-11 04:26:15,564 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Adding newly assigned partitions: user.deleted.V2-0, user.registered.V2-0, user.updated.V2-0
+2026-11-11 04:26:15,562 INFO  org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Adding newly assigned partitions: blood-donor-notifications-0
+2026-11-11 04:26:15,570 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Found no committed offset for partition user.geo.enriched.V2-0
+2026-11-11 04:26:15,570 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Found no committed offset for partition user.updated.V2-0
+2026-11-11 04:26:15,570 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Found no committed offset for partition user.deleted.V2-0
+2026-11-11 04:26:15,570 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Found no committed offset for partition user.registered.V2-0
+2026-11-11 04:26:15,572 INFO  org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Found no committed offset for partition blood-donor-notifications-0
+2026-11-11 04:26:15,582 INFO  org.apache.kafka.clients.consumer.internals.SubscriptionState - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Resetting offset for partition user.updated.V2-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}.
+2026-11-11 04:26:15,583 INFO  org.apache.kafka.clients.consumer.internals.SubscriptionState - [Consumer clientId=consumer-sondhan-consumer-group-7, groupId=sondhan-consumer-group] Resetting offset for partition user.geo.enriched.V2-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}.
+2026-11-11 04:26:15,584 INFO  org.apache.kafka.clients.consumer.internals.SubscriptionState - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Resetting offset for partition user.deleted.V2-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}.
+2026-11-11 04:26:15,584 INFO  org.apache.kafka.clients.consumer.internals.SubscriptionState - [Consumer clientId=consumer-sondhan-consumer-group-1, groupId=sondhan-consumer-group] Resetting offset for partition user.registered.V2-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}.
+2026-11-11 04:26:15,582 INFO  org.apache.kafka.clients.consumer.internals.SubscriptionState - [Consumer clientId=consumer-sondhan-consumer-group-4, groupId=sondhan-consumer-group] Resetting offset for partition blood-donor-notifications-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:9092 (id: 1 rack: null)], epoch=0}}.
+2026-11-11 04:32:26,510 INFO  org.apache.kafka.clients.producer.ProducerConfig - ProducerConfig values: 
+	acks = -1
+	auto.include.jmx.reporter = true
+	batch.size = 16384
+	bootstrap.servers = [localhost:9092]
+	buffer.memory = 33554432
+	client.dns.lookup = use_all_dns_ips
+	client.id = producer-1
+	compression.gzip.level = -1
+	compression.lz4.level = 9
+	compression.type = snappy
+	compression.zstd.level = 3
+	connections.max.idle.ms = 540000
+	delivery.timeout.ms = 120000
+	enable.idempotence = true
+	enable.metrics.push = true
+	interceptor.classes = []
+	key.serializer = class org.apache.kafka.common.serialization.StringSerializer
+	linger.ms = 10
+	max.block.ms = 60000
+	max.in.flight.requests.per.connection = 3
+	max.request.size = 1048576
+	metadata.max.age.ms = 300000
+	metadata.max.idle.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partitioner.adaptive.partitioning.enable = true
+	partitioner.availability.timeout.ms = 0
+	partitioner.class = null
+	partitioner.ignore.keys = false
+	receive.buffer.bytes = 32768
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 3
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	transaction.timeout.ms = 60000
+	transactional.id = null
+	value.serializer = class org.springframework.kafka.support.serializer.JsonSerializer
+
+2026-11-11 04:32:26,511 INFO  org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-11-11 04:32:26,530 INFO  org.apache.kafka.clients.producer.KafkaProducer - [Producer clientId=producer-1] Instantiated an idempotent producer.
+2026-11-11 04:32:26,547 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.8.1
+2026-11-11 04:32:26,547 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 70d6ff42debf7e17
+2026-11-11 04:32:26,547 INFO  org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1794349946546
+2026-11-11 04:32:26,555 INFO  org.apache.kafka.clients.Metadata - [Producer clientId=producer-1] Cluster ID: OJ4vYk-QRCysOeviNC8lCA
+2026-11-11 04:32:26,581 INFO  org.apache.kafka.clients.producer.internals.TransactionManager - [Producer clientId=producer-1] ProducerId set to 0 with epoch 0

@@ -11438,3 +11438,753 @@ Caused by: jakarta.persistence.TransactionRequiredException: Executing an update
                 com.zaxxer.hikari.HikariDataSource
                 []
                 - HikariPool-1 - Shutdown completed.
+2026-11-11 04:25:59.810
+                [main]
+                INFO 
+                c.b.b.BloodDonorFinderApplication
+                []
+                - Starting BloodDonorFinderApplication using Java 17.0.17 with PID 72575 (/data/pet-projects/sondhan/service/Blood-Donor-Finder/target/classes started by shanto in /data/pet-projects/sondhan/service/Blood-Donor-Finder)
+2026-11-11 04:25:59.813
+                [main]
+                DEBUG
+                c.b.b.BloodDonorFinderApplication
+                []
+                - Running with Spring Boot v3.4.4, Spring v6.2.5
+2026-11-11 04:25:59.815
+                [main]
+                INFO 
+                c.b.b.BloodDonorFinderApplication
+                []
+                - No active profile set, falling back to 1 default profile: "default"
+2026-11-11 04:26:01.318
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-11 04:26:01.319
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Bootstrapping Spring Data Elasticsearch repositories in DEFAULT mode.
+2026-11-11 04:26:01.451
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Finished Spring Data repository scanning in 123 ms. Found 2 Elasticsearch repository interfaces.
+2026-11-11 04:26:01.922
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-11 04:26:01.923
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Bootstrapping Spring Data Reactive Elasticsearch repositories in DEFAULT mode.
+2026-11-11 04:26:01.952
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.kafka.idempotency.ProcessedEventRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.954
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.BloodRequestRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.957
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.KafkaEventTrackerRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.958
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.OtpCodeRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.961
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.UserRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.963
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.audit.AuditLogRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.967
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.auth.PermissionRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.968
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.auth.PiiTokenRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.971
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Reactive Elasticsearch - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.auth.RoleRepository; If you want this repository to be a Reactive Elasticsearch repository, consider annotating your entities with one of these annotations: org.springframework.data.elasticsearch.annotations.Document (preferred), or consider extending one of the following types with your repository: org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository
+2026-11-11 04:26:01.976
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Finished Spring Data repository scanning in 48 ms. Found 0 Reactive Elasticsearch repository interfaces.
+2026-11-11 04:26:01.990
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-11 04:26:01.991
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-11 04:26:02.014
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data JPA - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.es.RegisteredDonorDocumentRepository; If you want this repository to be a JPA repository, consider annotating your entities with one of these annotations: jakarta.persistence.Entity, jakarta.persistence.MappedSuperclass (preferred), or consider extending one of the following types with your repository: org.springframework.data.jpa.repository.JpaRepository
+2026-11-11 04:26:02.015
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data JPA - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.es.UserElasticSearchRepository; If you want this repository to be a JPA repository, consider annotating your entities with one of these annotations: jakarta.persistence.Entity, jakarta.persistence.MappedSuperclass (preferred), or consider extending one of the following types with your repository: org.springframework.data.jpa.repository.JpaRepository
+2026-11-11 04:26:02.038
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Finished Spring Data repository scanning in 41 ms. Found 9 JPA repository interfaces.
+2026-11-11 04:26:02.053
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-11-11 04:26:02.055
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-11-11 04:26:02.074
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.kafka.idempotency.ProcessedEventRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.074
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.BloodRequestRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.075
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.KafkaEventTrackerRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.075
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.OtpCodeRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.076
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.UserRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.077
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.audit.AuditLogRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.078
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.auth.PermissionRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.081
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.auth.PiiTokenRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.081
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.auth.RoleRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.082
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.es.RegisteredDonorDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.082
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationExtensionSupport
+                []
+                - Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.bd.blooddonorfinder.repository.es.UserElasticSearchRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-11-11 04:26:02.083
+                [main]
+                INFO 
+                o.s.d.r.c.RepositoryConfigurationDelegate
+                []
+                - Finished Spring Data repository scanning in 18 ms. Found 0 Redis repository interfaces.
+2026-11-11 04:26:03.133
+                [main]
+                INFO 
+                o.s.b.w.embedded.tomcat.TomcatWebServer
+                []
+                - Tomcat initialized with port 8088 (http)
+2026-11-11 04:26:03.144
+                [main]
+                INFO 
+                o.apache.coyote.http11.Http11NioProtocol
+                []
+                - Initializing ProtocolHandler ["http-nio-8088"]
+2026-11-11 04:26:03.146
+                [main]
+                INFO 
+                o.apache.catalina.core.StandardService
+                []
+                - Starting service [Tomcat]
+2026-11-11 04:26:03.146
+                [main]
+                INFO 
+                org.apache.catalina.core.StandardEngine
+                []
+                - Starting Servlet engine: [Apache Tomcat/10.1.39]
+2026-11-11 04:26:03.211
+                [main]
+                INFO 
+                o.a.c.c.C.[.[localhost].[/sondhan]
+                []
+                - Initializing Spring embedded WebApplicationContext
+2026-11-11 04:26:03.211
+                [main]
+                INFO 
+                o.s.b.w.s.c.ServletWebServerApplicationContext
+                []
+                - Root WebApplicationContext: initialization completed in 3310 ms
+2026-11-11 04:26:03.475
+                [main]
+                INFO 
+                c.b.b.security.jwt.RsaKeyProvider
+                []
+                - RSA key pair loaded successfully (algorithm=RSA)
+2026-11-11 04:26:03.916
+                [main]
+                DEBUG
+                c.b.b.s.filter.JwtAuthenticationFilter
+                []
+                - Filter 'jwtAuthenticationFilter' configured for use
+2026-11-11 04:26:04.160
+                [main]
+                INFO 
+                com.zaxxer.hikari.HikariDataSource
+                []
+                - HikariPool-1 - Starting...
+2026-11-11 04:26:04.307
+                [main]
+                INFO 
+                com.zaxxer.hikari.pool.HikariPool
+                []
+                - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@4e53c6ef
+2026-11-11 04:26:04.309
+                [main]
+                INFO 
+                com.zaxxer.hikari.HikariDataSource
+                []
+                - HikariPool-1 - Start completed.
+2026-11-11 04:26:04.346
+                [main]
+                INFO 
+                org.flywaydb.core.FlywayExecutor
+                []
+                - Database: jdbc:postgresql://localhost:5432/bd_db (PostgreSQL 15.19)
+2026-11-11 04:26:04.468
+                [main]
+                INFO 
+                o.f.core.internal.command.DbMigrate
+                []
+                - Current version of schema "public": 32
+2026-11-11 04:26:04.469
+                [main]
+                WARN 
+                o.f.core.internal.command.DbMigrate
+                []
+                - Schema "public" has a version (32) that is newer than the latest available migration (30) !
+2026-11-11 04:26:04.475
+                [main]
+                INFO 
+                o.f.core.internal.command.DbMigrate
+                []
+                - Schema "public" is up to date. No migration necessary.
+2026-11-11 04:26:05.015
+                [main]
+                INFO 
+                o.s.o.j.p.SpringPersistenceUnitInfo
+                []
+                - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-11 04:26:05.060
+                [main]
+                WARN 
+                org.hibernate.orm.deprecation
+                []
+                - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-11-11 04:26:06.453
+                [main]
+                INFO 
+                o.s.o.j.LocalContainerEntityManagerFactoryBean
+                []
+                - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-11 04:26:06.931
+                [main]
+                INFO 
+                o.s.d.j.r.query.QueryEnhancerFactory
+                []
+                - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-11-11 04:26:08.026
+                [main]
+                INFO 
+                c.b.b.config.async_config.AsyncConfig
+                []
+                - GeoFetchExecutor- initialized — core=5, max=20, queue=500, keepAliveSeconds=60
+2026-11-11 04:26:08.151
+                [main]
+                DEBUG
+                c.b.b.kafka.registry.KafkaTopicRegistry
+                []
+                - Registering topic with name : user.registered
+2026-11-11 04:26:08.153
+                [main]
+                DEBUG
+                c.b.b.kafka.registry.KafkaTopicRegistry
+                []
+                - Registering topic with name : user.updated
+2026-11-11 04:26:08.154
+                [main]
+                DEBUG
+                c.b.b.kafka.registry.KafkaTopicRegistry
+                []
+                - Registering topic with name : user.geo.enriched
+2026-11-11 04:26:09.036
+                [main]
+                INFO 
+                c.b.b.k.r.KafkaEventHandlerRegistry
+                []
+                - Registered 2 event handlers: [user.registered.V2, user.geo.enriched.V2]
+2026-11-11 04:26:09.036
+                [main]
+                INFO 
+                c.b.b.k.r.KafkaEventHandlerRegistry
+                []
+                - Event handler key : user.registered.V2, handler : UserRegisteredEventHandler
+2026-11-11 04:26:09.036
+                [main]
+                INFO 
+                c.b.b.k.r.KafkaEventHandlerRegistry
+                []
+                - Event handler key : user.geo.enriched.V2, handler : GeoEnrichedEventHandler
+2026-11-11 04:26:09.135
+                [main]
+                INFO 
+                c.b.b.config.async_config.AsyncConfig
+                []
+                - AuditExecutor- initialized — core=2, max=5, queue=100, keepAliveSeconds=60
+2026-11-11 04:26:09.369
+                [main]
+                WARN 
+                o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration
+                []
+                - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-11-11 04:26:09.424
+                [main]
+                INFO 
+                o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer
+                []
+                - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-11-11 04:26:10.041
+                [main]
+                INFO 
+                o.s.b.a.e.web.EndpointLinksResolver
+                []
+                - Exposing 1 endpoint beneath base path '/actuator'
+2026-11-11 04:26:11.713
+                [main]
+                INFO 
+                o.apache.coyote.http11.Http11NioProtocol
+                []
+                - Starting ProtocolHandler ["http-nio-8088"]
+2026-11-11 04:26:11.724
+                [main]
+                INFO 
+                o.s.b.w.embedded.tomcat.TomcatWebServer
+                []
+                - Tomcat started on port 8088 (http) with context path '/sondhan'
+2026-11-11 04:26:12.105
+                [main]
+                INFO 
+                c.b.b.BloodDonorFinderApplication
+                []
+                - Started BloodDonorFinderApplication in 13.813 seconds (process running for 14.437)
+2026-11-11 04:26:12.150
+                [scheduling-1]
+                INFO 
+                c.b.b.worker.GeoEnrichmentWorker
+                []
+                - Geo enrichment worker starts at: 2026-11-10T22:26:12.150513469Z
+2026-11-11 04:26:12.338
+                [scheduling-1]
+                DEBUG
+                c.b.b.worker.GeoEnrichmentWorker
+                []
+                - No pending geo enrichment to process
+2026-11-11 04:26:15.558
+                [org.springframework.kafka.KafkaListenerEndpointContainer#0-1-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: []
+2026-11-11 04:26:15.558
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-1-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: []
+2026-11-11 04:26:15.559
+                [org.springframework.kafka.KafkaListenerEndpointContainer#0-2-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: []
+2026-11-11 04:26:15.562
+                [org.springframework.kafka.KafkaListenerEndpointContainer#1-1-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: []
+2026-11-11 04:26:15.562
+                [org.springframework.kafka.KafkaListenerEndpointContainer#1-2-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: []
+2026-11-11 04:26:15.563
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-2-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: []
+2026-11-11 04:26:15.583
+                [org.springframework.kafka.KafkaListenerEndpointContainer#1-0-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: [user.geo.enriched.V2-0]
+2026-11-11 04:26:15.586
+                [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: [blood-donor-notifications-0]
+2026-11-11 04:26:15.584
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                o.s.k.l.KafkaMessageListenerContainer
+                []
+                - sondhan-consumer-group: partitions assigned: [user.deleted.V2-0, user.registered.V2-0, user.updated.V2-0]
+2026-11-11 04:27:34.220
+                [http-nio-8088-exec-1]
+                INFO 
+                o.a.c.c.C.[.[localhost].[/sondhan]
+                []
+                - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-11 04:27:34.220
+                [http-nio-8088-exec-1]
+                INFO 
+                o.s.web.servlet.DispatcherServlet
+                []
+                - Initializing Servlet 'dispatcherServlet'
+2026-11-11 04:27:34.224
+                [http-nio-8088-exec-1]
+                INFO 
+                o.s.web.servlet.DispatcherServlet
+                []
+                - Completed initialization in 3 ms
+2026-11-11 04:27:34.411
+                [http-nio-8088-exec-1]
+                DEBUG
+                c.b.b.controller.auth.AuthController
+                []
+                - ..........Registering Ankur Das .........
+2026-11-11 04:27:34.434
+                [http-nio-8088-exec-1]
+                DEBUG
+                c.bd.blooddonorfinder.utils.PiiTokenizer
+                []
+                - Creating new PII token of type {}PHONE
+2026-11-11 04:27:34.501
+                [http-nio-8088-exec-1]
+                DEBUG
+                c.bd.blooddonorfinder.utils.PiiTokenizer
+                []
+                - Creating new PII token of type {}EMAIL
+2026-11-11 04:27:35.711
+                [http-nio-8088-exec-1]
+                DEBUG
+                c.b.b.service.MailServiceImpl
+                []
+                - Sending email to: das.c*******@gmail.com
+2026-11-11 04:27:42.334
+                [http-nio-8088-exec-1]
+                INFO 
+                c.b.b.service.MailServiceImpl
+                []
+                - ..................Mail sent successfully...............
+2026-11-11 04:27:42.339
+                [http-nio-8088-exec-1]
+                INFO 
+                c.bd.blooddonorfinder.service.OtpService
+                []
+                - OTP sent to user bf76e949-58b4-4c4a-82e6-650c22bd8e3d,  purpose REGISTER
+2026-11-11 04:27:42.350
+                [http-nio-8088-exec-1]
+                WARN 
+                c.b.b.config.async_config.AsyncConfig
+                []
+                - Default (unnamed) async executor initialized — verify no @Async call site is missing an explicit executor bean name.
+2026-11-11 04:31:14.889
+                [http-nio-8088-exec-3]
+                DEBUG
+                c.b.b.controller.auth.AuthController
+                []
+                - Verifying otp for userId: bf76e949-58b4-4c4a-82e6-650c22bd8e3d, purpose: register
+2026-11-11 04:31:14.918
+                [http-nio-8088-exec-3]
+                DEBUG
+                c.b.b.service.auth.SondhanAuthService
+                []
+                - Verifying otp for purpose : REGISTER...
+2026-11-11 04:31:14.927
+                [http-nio-8088-exec-3]
+                WARN 
+                c.b.b.service.auth.SondhanAuthService
+                []
+                - Failed to verify Otp for userId: bf76e949-58b4-4c4a-82e6-650c22bd8e3d, purpose: REGISTER, cause: null
+2026-11-11 04:31:14.932
+                [http-nio-8088-exec-3]
+                WARN 
+                c.b.b.exception.GlobalExceptionHandler
+                []
+                - AuthException [OTP_EXPIRED]: No active OTP found, request a new one
+2026-11-11 04:31:31.226
+                [http-nio-8088-exec-4]
+                DEBUG
+                c.b.b.controller.auth.AuthController
+                []
+                - ..........Registering Ankur Das .........
+2026-11-11 04:31:31.245
+                [http-nio-8088-exec-4]
+                WARN 
+                c.b.b.exception.GlobalExceptionHandler
+                []
+                - AuthException [USER_ALREADY_EXISTS_WITH_EMAIL]: A user with this email already exists
+2026-11-11 04:31:45.008
+                [http-nio-8088-exec-5]
+                DEBUG
+                c.b.b.controller.auth.AuthController
+                []
+                - ..........Registering Ankur Das .........
+2026-11-11 04:31:45.584
+                [http-nio-8088-exec-5]
+                DEBUG
+                c.b.b.service.MailServiceImpl
+                []
+                - Sending email to: das.c*******@gmail.com
+2026-11-11 04:31:52.512
+                [http-nio-8088-exec-5]
+                INFO 
+                c.b.b.service.MailServiceImpl
+                []
+                - ..................Mail sent successfully...............
+2026-11-11 04:31:52.512
+                [http-nio-8088-exec-5]
+                INFO 
+                c.bd.blooddonorfinder.service.OtpService
+                []
+                - OTP sent to user 9e0f7491-4532-4a84-b484-2cf7bd7ed0e4,  purpose REGISTER
+2026-11-11 04:32:26.183
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.controller.auth.AuthController
+                []
+                - Verifying otp for userId: 9e0f7491-4532-4a84-b484-2cf7bd7ed0e4, purpose: register
+2026-11-11 04:32:26.191
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.service.auth.SondhanAuthService
+                []
+                - Verifying otp for purpose : REGISTER...
+2026-11-11 04:32:26.197
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.bd.blooddonorfinder.service.OtpService
+                []
+                - Found active otp code for REGISTER, usedId: 9e0f7491-4532-4a84-b484-2cf7bd7ed0e4
+2026-11-11 04:32:26.198
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.bd.blooddonorfinder.service.OtpService
+                []
+                - Otp verification successful for REGISTER, usedId: 9e0f7491-4532-4a84-b484-2cf7bd7ed0e4
+2026-11-11 04:32:26.244
+                [http-nio-8088-exec-6]
+                INFO 
+                c.b.b.service.UserServiceImpl
+                []
+                - Updating user Geo location : com.bd.blooddonorfinder.payload.response.GeoResponse@459c3d48
+2026-11-11 04:32:26.247
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.service.UserServiceImpl
+                []
+                - ====== Came to get role permissions for userId : 9e0f7491-4532-4a84-b484-2cf7bd7ed0e4 ==========
+2026-11-11 04:32:26.287
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.service.UserServiceImpl
+                []
+                - Roles for userId: 9e0f7491-4532-4a84-b484-2cf7bd7ed0e4 = [Role{id=1, name='ROLE_DONOR', description='Standard blood donor user', permissions=[Permission{id=3, name='donor:update', description='Update donor profile information'}, Permission{id=1, name='donor:read', description='View blood donor profiles and availability'}, Permission{id=2, name='donor:create', description='Create a donor profile'}]}]
+2026-11-11 04:32:26.458
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.service.auth.TokenStorageService
+                []
+                - Whitelisted access token jti=54def775-39b3-47b9-8002-244d175f7c7c for user=Ankur, ttl=1200000ms
+2026-11-11 04:32:26.483
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.service.auth.TokenStorageService
+                []
+                - Whitelisted refresh token jti=70da1e61-bb82-493b-a666-90a6983339b4 for user=Ankur, ttl=604800000ms
+2026-11-11 04:32:26.485
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.service.auth.SondhanAuthService
+                []
+                - After successful otp verification for:REGISTER, auth token created...
+2026-11-11 04:32:26.493
+                [http-nio-8088-exec-6]
+                DEBUG
+                c.b.b.kafka.registry.KafkaTopicRegistry
+                []
+                - Came to publish event in main topic named : user.registered
+2026-11-11 04:32:26.493
+                [http-nio-8088-exec-6]
+                INFO 
+                c.b.b.k.p.GenericKafkaEventProducer
+                []
+                - Publishing event to kafka:eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9, aggregateId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4, topic=user.registered.V2
+2026-11-11 04:32:26.613
+                [http-nio-8088-exec-6]
+                INFO 
+                c.b.b.service.UserServiceImpl
+                []
+                - User register event published after commit: eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9, aggregateId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4
+2026-11-11 04:32:26.725
+                [kafka-producer-network-thread | producer-1]
+                INFO 
+                c.b.b.k.p.GenericKafkaEventProducer
+                []
+                - Event published: eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9, topic=user.registered.V2, partition=0, offset=0
+2026-11-11 04:32:27.168
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.kafka.consumer.UserEventConsumer
+                []
+                - Consumed UserEvent eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9, topic=user.registered, aggregateId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4, version=1, event = UserRegisteredEvent(super=com.bd.blooddonorfinder.kafka.model.events.UserRegisteredEvent@1fee086e, userId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4, username=Ankur, email=null, phone=null, role=null, bloodGroup=AB_POSITIVE, address=Nikunja-2, city=Khilkhet, district=Dhaka, country=Bangladesh, latitude=23.8351324, longitude=90.4351121, zipcode=null, isVerified=true, imgUrl=null, lastDonationDate=null, totalDonations=0, rating=0.0, createdAt=2026-11-11T04:31:45.558128, updatedAt=2026-11-11T04:31:45.558135)
+2026-11-11 04:32:27.206
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.k.r.KafkaEventHandlerRegistry
+                []
+                - Event handler  key:user.registered.V2
+2026-11-11 04:32:27.207
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                DEBUG
+                c.b.b.k.c.dispatch.KafkaEventDispatcher
+                []
+                - Dispatching eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9 to handler=class com.bd.blooddonorfinder.kafka.model.events.UserRegisteredEvent
+2026-11-11 04:32:27.268
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.kafka.sync.AbstractSyncHandler
+                []
+                - Handling event -> eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9, topic=user.registered, aggregateId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4
+2026-11-11 04:32:27.268
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.k.c.e.UserRegisteredEventHandler
+                []
+                - Sync UserRegisteredEvent to elastic index starts
+2026-11-11 04:32:27.268
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.s.es.ElasticSearchIndexServiceImpl
+                []
+                - ..........Indexing registered donor to elastic: userId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4, eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9 ........
+2026-11-11 04:32:27.964
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.s.es.ElasticSearchIndexServiceImpl
+                []
+                - ..........Successfully indexed user: userId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4, esId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4.................
+2026-11-11 04:32:27.964
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.k.c.e.UserRegisteredEventHandler
+                []
+                - UserRegisteredEvent synced into elastic, time taken : 696ms
+2026-11-11 04:32:27.965
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.kafka.sync.AbstractSyncHandler
+                []
+                - Handled eventId=71c53437-6b69-4d27-bf01-c17435bcf7e9, topic=user.registered, aggregateId=9e0f7491-4532-4a84-b484-2cf7bd7ed0e4
+2026-11-11 04:32:27.965
+                [org.springframework.kafka.KafkaListenerEndpointContainer#2-0-C-1]
+                INFO 
+                c.b.b.kafka.consumer.UserEventConsumer
+                []
+                - UserEvent dispatched successfully. eventId = 71c53437-6b69-4d27-bf01-c17435bcf7e9
