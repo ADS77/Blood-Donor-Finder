@@ -12,6 +12,7 @@ import com.bd.blooddonorfinder.model.common.Role;
 import com.bd.blooddonorfinder.model.enums.AuditEvent;
 import com.bd.blooddonorfinder.model.enums.OtpPurpose;
 import com.bd.blooddonorfinder.model.enums.PiiType;
+import com.bd.blooddonorfinder.payload.enums.LoginIdentifierType;
 import com.bd.blooddonorfinder.payload.response.*;
 import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.GeoStatus;
@@ -34,6 +35,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -116,29 +118,6 @@ public class UserServiceImpl implements UserService{
             errorResponse.setErrorDetails(new ErrorDetails("otp", "Failed to send otp"));
             return new OtpSentResponse(newUser.getId(), "Failed to send OTP", ttl, errorResponse);
         }
-/*        GeoLocation geo = newUser.getGeoLocation();
-        if(geo == null || geo.getCity() == null ||
-                (geo.getLatitude() == null || geo.getLongitude() == null)){
-            newUser.getGeoLocation().setGeoStatus(GeoStatus.PENDING);
-        }
-        else {
-            newUser.setGeoLocation(geo);
-            newUser.getGeoLocation().setGeoStatus(GeoStatus.COMPLETED);
-        }
-
-        String targetRole = registerRequest.getRole() != null && !registerRequest.getRole().isBlank()
-                ? registerRequest.getRole().toUpperCase()
-                : AppPermissions.ROLE_DONOR;
-
-        if (AppPermissions.ROLE_SUPER_ADMIN.equals(targetRole)) {
-            throw new IllegalArgumentException("Cannot self-register as SUPER_ADMIN");
-        }
-
-        Role role = roleRepository.findByName(targetRole).orElseThrow(
-                ()-> new IllegalArgumentException("Role not found: "+targetRole));
-        newUser.addRole(role);
-        User savedUser = userRepository.save(newUser);
-        return  savedUser;*/
     }
 
     @Override
@@ -195,11 +174,35 @@ public class UserServiceImpl implements UserService{
     @Override
     @Transactional(readOnly = true)
     public User findByPhone(String phone) {
-        return piiTokenizer.findByPlaintext(phone)
-                .flatMap(token -> userRepository.findByPhoneToken(token))
-                .orElseThrow(()->
-                        new AuthException(ErrorCode.USER_NOT_FOUND,
-                                "No account found for this phone number"));
+        return findByIdentifier(phone, LoginIdentifierType.PHONE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User findByIdentifier(String identifier, LoginIdentifierType identifierType) {
+        if (identifier == null || identifier.isBlank() || identifierType == null) {
+            throw new AuthException(ErrorCode.INVALID_REQUEST, "Identifier and identifier type are required");
+        }
+
+        PiiToken token = piiTokenizer.findByPlaintext(identifier)
+                .orElseThrow(() ->
+                        new AuthException(ErrorCode.USER_NOT_FOUND, "No account found"));
+
+        PiiType expectedType = switch (identifierType) {
+            case EMAIL -> PiiType.EMAIL;
+            case PHONE -> PiiType.PHONE;
+        };
+        if (token.getPiiType() != expectedType) {
+            log.warn("Identifier type mismatch: expected={}, actual={}", expectedType, token.getPiiType());
+            throw new AuthException(ErrorCode.USER_NOT_FOUND, "No account found");
+        }
+
+        Optional<User> user = switch (identifierType) {
+            case EMAIL -> userRepository.findUserWithRolesAndPermissionsByEmailToken(token);
+            case PHONE -> userRepository.findUserWithRolesAndPermissionsByPhoneToken(token);
+        };
+        return user.orElseThrow(() ->
+                new AuthException(ErrorCode.USER_NOT_FOUND, "No account found"));
     }
 
     @Override
@@ -247,6 +250,7 @@ public class UserServiceImpl implements UserService{
                 .orElseThrow(() ->
                         new IllegalStateException("Default role not configured: " + ROLE_DEFAULT));
         user.markVerified();
+        user.setActive(true);
         user.resetFailedOtpAttempts();
         user.addRole(defaultRole);
         User geoEnhancedUser = getGeoEnhancedUser(user);
@@ -257,9 +261,10 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public User completeLoginAfterOtpVerification(User user) {
-        if (!user.getIsVerified()) {
+        if (!Boolean.TRUE.equals(user.getIsVerified())) {
             throw new AuthException(ErrorCode.USER_NOT_VERIFIED,"User account is not verified");
         }
+        user.setActive(true);
         user.resetFailedOtpAttempts();
         return user;
     }

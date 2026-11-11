@@ -2,7 +2,7 @@ package com.bd.blooddonorfinder.payload.request;
 
 import com.bd.blooddonorfinder.model.common.GeoLocation;
 import com.bd.blooddonorfinder.model.enums.BloodGroup;
-import com.bd.blooddonorfinder.validator.ValidPassword;
+import com.bd.blooddonorfinder.validator.annotations.ValidPassword;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;

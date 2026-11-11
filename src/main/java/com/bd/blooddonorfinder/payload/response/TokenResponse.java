@@ -28,12 +28,14 @@ public class TokenResponse {
     private UUID userId;
     private List<String> authorities;
     public static TokenResponse of(String accessToken, String refreshToken,
-                                   long expiresInSeconds, String username, List<String> roles) {
+                                   long expiresInSeconds, String username, UUID userId,
+                                   List<String> roles) {
         return TokenResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .expiresIn(expiresInSeconds)
                 .username(username)
+                .userId(userId)
                 .authorities(roles)
                 .build();
     }

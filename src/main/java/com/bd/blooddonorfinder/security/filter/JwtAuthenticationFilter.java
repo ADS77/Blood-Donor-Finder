@@ -3,13 +3,13 @@ package com.bd.blooddonorfinder.security.filter;
 import com.bd.blooddonorfinder.model.enums.TokenType;
 import com.bd.blooddonorfinder.payload.response.ApiErrorResponse;
 import com.bd.blooddonorfinder.security.UserPrincipal;
+import com.bd.blooddonorfinder.security.exception.InvalidJwtTokenException;
 import com.bd.blooddonorfinder.security.jwt.JwtTokenProvider;
 import com.bd.blooddonorfinder.service.auth.TokenStorageService;
 import com.bd.blooddonorfinder.utils.constants.SecurityConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -101,9 +101,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
 
             }
-        }catch (ExpiredJwtException e) {
-            log.debug("Expired JWT token received: {}", jwtTokenProvider.maskToken(token));
-            sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "TOKEN_EXPIRED", "JWT token has expired");
+        } catch (InvalidJwtTokenException e) {
+            log.warn("Rejected JWT token ({}): {}", e.getReason(), jwtTokenProvider.maskToken(token));
+            sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, e.getReason().name(), e.getMessage());
         } catch (JwtException e) {
             log.warn("Invalid JWT token received: {}", jwtTokenProvider.maskToken(token));
             sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "INVALID_TOKEN", "Malformed or invalid JWT token");

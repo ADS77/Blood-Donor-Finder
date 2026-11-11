@@ -40,6 +40,9 @@ public class JwtTokenProvider {
     }
 
     public String createToken(String username, UUID userId, List<String>roles, TokenType tokenType){
+        if (userId == null) {
+            throw new IllegalArgumentException("User id is required to create a token");
+        }
         Instant now = Instant.now();
         long tokenValidity = tokenType == TokenType.ACCESS_TOKEN ? accessTokenValidity : refreshTokenValidity;
 
@@ -49,13 +52,14 @@ public class JwtTokenProvider {
         JwtBuilder builder = Jwts.builder()
                 .id(UUID.randomUUID().toString())
                 .subject(userId.toString())
-                .claim(SecurityConstants.CLAIM_USER_ID, userId)
+                .claim(SecurityConstants.CLAIM_USER_ID, userId.toString())
+                .claim(SecurityConstants.CLAIM_USERNAME, username)
                 .claim(SecurityConstants.TOKEN_TYPE, tokenType.getValue())
                 .issuedAt(issuedAt)
                 .expiration(expiration)
                 .signWith(rsaKeyProvider.getPrivateKey(), Jwts.SIG.RS256);
 
-        if(tokenType == tokenType.ACCESS_TOKEN && roles != null){
+        if(tokenType == TokenType.ACCESS_TOKEN && roles != null){
             builder.claim(SecurityConstants.CLAIM_ROLES, roles);
         }
         return builder.compact();
@@ -72,7 +76,7 @@ public class JwtTokenProvider {
             throw new InvalidJwtTokenException("Token has expired", e, TokenErrorReason.EXPIRED);
         } catch (SignatureException e) {
             throw new InvalidJwtTokenException("Invalid token signature", e, TokenErrorReason.SIGNATURE_INVALID);
-        } catch (MalformedJwtException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidJwtTokenException("Malformed token", e, TokenErrorReason.MALFORMED);
         }
     }
@@ -92,7 +96,8 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(Claims claims) {
-        return claims.getSubject();
+        String username = claims.get(SecurityConstants.CLAIM_USERNAME, String.class);
+        return username != null ? username : claims.getSubject();
     }
 
     public String getTokenId(Claims claims) {
@@ -107,7 +112,14 @@ public class JwtTokenProvider {
 
     public TokenType getTokenType(Claims claims) {
         String type = claims.get(SecurityConstants.TOKEN_TYPE, String.class);
-        return TokenType.valueOf(type);
+        if (type == null) {
+            throw new IllegalArgumentException("Token is missing the token type claim");
+        }
+        try {
+            return TokenType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unsupported token type: " + type, e);
+        }
     }
 
     public long getAccessTokenValiditySeconds() {
@@ -127,6 +139,21 @@ public class JwtTokenProvider {
         if (uid instanceof UUID uuid) {
             return uuid;
         }
+        if (uid instanceof String value) {
+            try {
+                return UUID.fromString(value);
+            } catch (IllegalArgumentException ignored) {
+                // Fall through to the subject claim below.
+            }
+        }
+        String subject = claims.getSubject();
+        if (subject != null) {
+            try {
+                return UUID.fromString(subject);
+            } catch (IllegalArgumentException ignored) {
+                log.debug("Token subject is not a valid user id: {}", subject);
+            }
+        }
         return null;
     }
 
@@ -141,13 +168,14 @@ public class JwtTokenProvider {
     }
 
     private TokenResponse issueTokenPair(String username, UUID userId, List<String> roles) throws InvalidJwtTokenException {
-        String accessToken = issueAccessToken(username, userId,roles);
+        String accessToken = issueAccessToken(username, userId, roles);
         String refreshToken = issueRefreshToken(username, userId, roles);
         return TokenResponse.of(
                 accessToken,
                 refreshToken,
                 accessTokenValidity,
                 username,
+                userId,
                 roles);
     }
 
@@ -155,15 +183,15 @@ public class JwtTokenProvider {
         String accessToken = createToken(username, userId, roles, TokenType.ACCESS_TOKEN);
         Claims accessClaims = parseAndValidateClaims(accessToken);
         long accessTtl = TimeUnit.SECONDS.toMillis(accessTokenValidity);
-        tokenStorageService.whitelistAccessToken(accessClaims.getId(), username, accessTtl);
+        tokenStorageService.whitelistAccessToken(accessClaims.getId(), userId.toString(), accessTtl);
         return accessToken;
     }
 
     private String issueRefreshToken(String username, UUID userId, List<String> roles) throws InvalidJwtTokenException {
         String refreshToken = createToken(username, userId, roles, TokenType.REFRESH_TOKEN);
-        Claims accessClaims = parseAndValidateClaims(refreshToken);
+        Claims refreshClaims = parseAndValidateClaims(refreshToken);
         long refreshTtl = TimeUnit.SECONDS.toMillis(refreshTokenValidity);
-        tokenStorageService.whitelistRefreshToken(accessClaims.getId(), username, refreshTtl);
+        tokenStorageService.whitelistRefreshToken(refreshClaims.getId(), userId.toString(), refreshTtl);
         return refreshToken;
     }
 

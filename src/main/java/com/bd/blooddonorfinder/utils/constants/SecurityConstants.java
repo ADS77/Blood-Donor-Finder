@@ -14,10 +14,13 @@ public final class SecurityConstants {
     // ── Redis Key Prefixes ──
     public static final String WHITELIST_ACCESS_PREFIX  = "auth:whitelist:access:";
     public static final String WHITELIST_REFRESH_PREFIX = "auth:whitelist:refresh:";
+    public static final String USER_ACCESS_INDEX_PREFIX = "auth:user:access:";
+    public static final String USER_REFRESH_INDEX_PREFIX = "auth:user:refresh:";
     public static final String BLACKLIST_PREFIX         = "auth:blacklist:";
 
     // ── Claim Keys ──
     public static final String CLAIM_ROLES     = "roles";
     public static final String CLAIM_USER_ID   = "uid";
+    public static final String CLAIM_USERNAME  = "username";
     public static final String CLAIM_TOKEN_ID  = "jti";
 }

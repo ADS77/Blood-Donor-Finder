@@ -43,7 +43,8 @@ public class AuditLog {
         this.userId = builder.userId;
         this.auditEvent = builder.auditEvent;
         this.ipAddress = builder.ipAddress;
-        this.userAgent = builder.metadata;
+        this.userAgent = builder.userAgent;
+        this.metadata = builder.metadata;
         this.createdAt = Instant.now();
     }
 

@@ -20,6 +20,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByPhoneToken(PiiToken phoneToken);
     Optional<User>findByEmailToken(PiiToken emailToken);
     Optional<User>findByFirstName(String firstName);
+
+    @EntityGraph(attributePaths = {"roles", "roles.permissions"})
+    Optional<User> findUserWithRolesAndPermissionsByPhoneToken(PiiToken phoneToken);
+
+    @EntityGraph(attributePaths = {"roles", "roles.permissions"})
+    Optional<User> findUserWithRolesAndPermissionsByEmailToken(PiiToken emailToken);
     boolean existsByEmailToken(PiiToken emailToken);
     boolean existsByPhoneToken(PiiToken phoneToken);
 

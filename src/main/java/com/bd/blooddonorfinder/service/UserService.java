@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.service;
 
 import com.bd.blooddonorfinder.model.PiiToken;
 import com.bd.blooddonorfinder.model.common.User;
+import com.bd.blooddonorfinder.payload.enums.LoginIdentifierType;
 import com.bd.blooddonorfinder.payload.request.RegisterRequest;
 import com.bd.blooddonorfinder.payload.response.OtpSentResponse;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
@@ -14,11 +15,14 @@ import java.util.UUID;
 public interface UserService {
 
     User findById(UUID userId);
+
     OtpSentResponse registerNewUser(RegisterRequest registerRequest, String ipAddress, String userAgent);
 
     RestApiResponse<User> registerUser(RegisterRequest registrationRequest);
 
     public User findByPhone(String phone);
+
+    User findByIdentifier(String identifier, LoginIdentifierType identifierType);
 
     public boolean existByEmailToken(PiiToken emailToken);
 

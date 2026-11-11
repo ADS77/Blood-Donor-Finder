@@ -1,5 +1,6 @@
-package com.bd.blooddonorfinder.validator;
+package com.bd.blooddonorfinder.validator.annotations;
 
+import com.bd.blooddonorfinder.validator.PasswordConstraintValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
