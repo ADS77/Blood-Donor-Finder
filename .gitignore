@@ -33,3 +33,20 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs (may contain PII) ###
+logs/
+*.log
+
+### Secrets / signing keys ###
+# Local environment overrides loaded by spring.config.import
+.env
+.env.*
+!.env.example
+# RSA / PEM private keys and generated key material
+rsakeys/
+*.der
+*.pem
+*.key
+*.p12
+*.jks
