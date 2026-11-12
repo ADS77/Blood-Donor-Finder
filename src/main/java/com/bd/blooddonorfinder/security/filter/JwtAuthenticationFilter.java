@@ -8,7 +8,6 @@ import com.bd.blooddonorfinder.security.jwt.JwtTokenProvider;
 import com.bd.blooddonorfinder.service.auth.TokenStorageService;
 import com.bd.blooddonorfinder.utils.constants.SecurityConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -40,84 +39,92 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenStorageService tokenStorageService;
-    private static final String BEARER_PREFIX = "Bearer ";
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader(SecurityConstants.TOKEN_HEADER);
-        if (authHeader == null || !authHeader.startsWith(SecurityConstants.TOKEN_PREFIX)) {
+        String token = jwtTokenProvider.resolveToken(request);
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
-        String token = jwtTokenProvider.resolveToken(request);
-        try {
-            if(token != null && SecurityContextHolder.getContext().getAuthentication() == null){
-                Claims claims = jwtTokenProvider.parseAndValidateClaims(token);
 
+        try {
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                Claims claims = jwtTokenProvider.parseAndValidateClaims(token);
                 TokenType tokenType = jwtTokenProvider.getTokenType(claims);
-                if(tokenType != TokenType.ACCESS_TOKEN){
+                String jti = jwtTokenProvider.getTokenId(claims);
+
+                if (tokenType != TokenType.ACCESS_TOKEN) {
                     log.warn("Rejected non-access token (type={}) on endpoint {}",
                             tokenType, request.getRequestURI());
-                    filterChain.doFilter(request, response);
-                    return;
-                }
-                String jti = jwtTokenProvider.getTokenId(claims);
-                if (!tokenStorageService.isAccessTokenWhitelisted(jti)) {
+                } else if (!tokenStorageService.isAccessTokenWhitelisted(jti)) {
                     log.warn("Rejected revoked access token jti={}", jti);
-                    filterChain.doFilter(request, response);
-                    return;
+                } else {
+                    authenticate(claims, token, request);
                 }
-
-                String username = jwtTokenProvider.getUsername(claims);
-                List<String> roles = jwtTokenProvider.getRoles(claims);
-                UUID userId = jwtTokenProvider.getUserId(claims);
-                if(username != null){
-                    Set<GrantedAuthority> grantedAuthorities = roles.stream()
-                            .map(SimpleGrantedAuthority::new)
-                            .collect(Collectors.toSet());
-
-                    UserPrincipal principal = new UserPrincipal(
-                            userId,
-                            username,
-                            "",
-                            true,
-                            grantedAuthorities
-                    );
-
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            principal.getAuthorities()
-                    );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("Authenticated user '{}' (orgId: {}) with masked token: {}",
-                            username, jwtTokenProvider.maskToken(token));
-                }
-                filterChain.doFilter(request, response);
-
             }
         } catch (InvalidJwtTokenException e) {
             log.warn("Rejected JWT token ({}): {}", e.getReason(), jwtTokenProvider.maskToken(token));
             sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, e.getReason().name(), e.getMessage());
-        } catch (JwtException e) {
+            return;
+        } catch (JwtException | IllegalArgumentException e) {
             log.warn("Invalid JWT token received: {}", jwtTokenProvider.maskToken(token));
-            sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "INVALID_TOKEN", "Malformed or invalid JWT token");
+            sendJsonError(response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "INVALID_TOKEN", "Malformed or invalid JWT token");
+            return;
         }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private void authenticate(Claims claims, String token, HttpServletRequest request) {
+        String username = jwtTokenProvider.getUsername(claims);
+        if (username == null) {
+            log.warn("JWT is missing a usable username claim");
+            return;
+        }
+
+        List<String> roles = jwtTokenProvider.getRoles(claims);
+        UUID userId = jwtTokenProvider.getUserId(claims);
+        Set<GrantedAuthority> grantedAuthorities = roles.stream()
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toSet());
+
+        UserPrincipal principal = new UserPrincipal(
+                userId,
+                username,
+                "",
+                true,
+                grantedAuthorities
+        );
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                principal.getAuthorities()
+        );
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        log.debug("Authenticated user '{}' with masked token: {}",
+                username, jwtTokenProvider.maskToken(token));
     }
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return path.startsWith("/api/auth/");
+        // getServletPath() excludes the configured context path, unlike getRequestURI().
+        return request.getServletPath().startsWith("/api/auth/");
     }
 
     private void sendJsonError(HttpServletResponse response, int status, String code, String message) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setHeader("Cache-Control", "no-store");
         response.setStatus(status);
         ApiErrorResponse errorResponse = new ApiErrorResponse();
         errorResponse.setMessage(message);
@@ -125,6 +132,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         errorResponse.setError(code);
         objectMapper.writeValue(response.getOutputStream(), errorResponse);
     }
-
-
 }

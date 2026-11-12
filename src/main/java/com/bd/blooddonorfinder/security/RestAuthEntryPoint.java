@@ -26,10 +26,6 @@ public class RestAuthEntryPoint implements AuthenticationEntryPoint {
                          AuthenticationException authException) throws IOException, ServletException {
         log.debug("Unauthorized access attempt to {} — {}", request.getRequestURI(), authException.getMessage());
 
-        response.setHeader("Access-Control-Allow-Credentials", "true");
-        response.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
-        response.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type,X-Requested-With,Accept,Origin");
-
         ApiErrorResponse error = ApiErrorResponse.of(
                 HttpServletResponse.SC_UNAUTHORIZED,
                 "Unauthorized",
@@ -38,6 +34,7 @@ public class RestAuthEntryPoint implements AuthenticationEntryPoint {
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setHeader("Cache-Control", "no-store");
         objectMapper.writeValue(response.getOutputStream(), error);
     }
 }

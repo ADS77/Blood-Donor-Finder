@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Stores the allow-list (whitelist) of issued JWTs in Redis.
@@ -59,6 +60,25 @@ public class TokenStorageService {
     }
 
     /**
+     * Atomically removes a refresh token from the whitelist.
+     *
+     * @return {@code true} if this caller was the first to consume the token;
+     *         {@code false} if the token had already been rotated or revoked
+     */
+    public boolean consumeRefreshToken(String jti) {
+        if (!StringUtils.hasText(jti)) {
+            return false;
+        }
+        String key = tokenKey(SecurityConstants.WHITELIST_REFRESH_PREFIX, jti);
+        String userId = redisTemplate.opsForValue().getAndDelete(key);
+        if (StringUtils.hasText(userId)) {
+            redisTemplate.opsForSet().remove(
+                    indexKey(SecurityConstants.USER_REFRESH_INDEX_PREFIX, userId), jti);
+        }
+        return userId != null;
+    }
+
+    /**
      * Revokes every access and refresh token issued to the supplied user.
      *
      * @param userId stable user identifier stored alongside the token
@@ -97,7 +117,7 @@ public class TokenStorageService {
         // Write the index first. If the token write then fails, the login fails
         // and no usable token is left behind.
         redisTemplate.opsForSet().add(indexKey, jti);
-        redisTemplate.expire(indexKey, ttl);
+        extendIndexTtl(indexKey, ttl);
         redisTemplate.opsForValue().set(tokenKey(tokenPrefix, jti), userId, ttl);
 
         log.debug("Whitelisted token jti={} for user={}, ttl={}ms", jti, userId, ttlMillis);
@@ -127,6 +147,19 @@ public class TokenStorageService {
             jtis.forEach(jti -> redisTemplate.delete(tokenKey(tokenPrefix, jti)));
         }
         redisTemplate.delete(indexKey);
+    }
+
+    /**
+     * Keeps the per-user index alive at least as long as the longest-lived
+     * token it contains. Refreshing the TTL to a shorter value would make the
+     * index expire before older refresh tokens, causing {@link #revokeAllTokensForUser}
+     * to miss tokens.
+     */
+    private void extendIndexTtl(String indexKey, Duration ttl) {
+        Long currentTtlMillis = redisTemplate.getExpire(indexKey, TimeUnit.MILLISECONDS);
+        if (currentTtlMillis == null || currentTtlMillis < 0 || currentTtlMillis < ttl.toMillis()) {
+            redisTemplate.expire(indexKey, ttl);
+        }
     }
 
     private String tokenKey(String prefix, String jti) {

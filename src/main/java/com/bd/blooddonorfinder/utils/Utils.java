@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 
+import java.util.Locale;
+
 public class Utils {
     public static <T> RestApiResponse<T> buildSuccessRestResponse(HttpStatus httpStatus, T klass) {
         return new RestApiResponse(httpStatus, new SuccessDetails(klass));
@@ -53,6 +55,22 @@ public class Utils {
         } catch (IllegalArgumentException e) {
             throw new AuthException(ErrorCode.INVALID_REQUEST,
                     "Invalid OTP purpose: " + purposeStr);
+        }
+    }
+
+    /**
+     * Normalizes an OTP purpose for use in rate-limit keys. Missing or unknown
+     * values map to {@code INVALID} so that malformed requests still share a
+     * stable bucket instead of failing open.
+     */
+    public static String otpPurposeKey(String purposeStr) {
+        if (!StringUtils.hasText(purposeStr)) {
+            return "INVALID";
+        }
+        try {
+            return OtpPurpose.valueOf(purposeStr.trim().toUpperCase(Locale.ROOT)).name();
+        } catch (IllegalArgumentException e) {
+            return "INVALID";
         }
     }
 }

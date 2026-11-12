@@ -32,6 +32,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
                 request.getRequestURI());
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setHeader("Cache-Control", "no-store");
         objectMapper.writeValue(response.getOutputStream(), error);
     }
 }

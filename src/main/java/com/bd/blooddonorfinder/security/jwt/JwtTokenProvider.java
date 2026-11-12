@@ -33,6 +33,8 @@ public class JwtTokenProvider {
     private long accessTokenValidity;
     @Value("${security.jwt.refresh.token.validity}")
     private long refreshTokenValidity;
+    @Value("${security.jwt.issuer:sondhan}")
+    private String issuer;
 
     public JwtTokenProvider(RsaKeyProvider rsaKeyProvider, TokenStorageService tokenStorageService) {
         this.rsaKeyProvider = rsaKeyProvider;
@@ -55,6 +57,7 @@ public class JwtTokenProvider {
                 .claim(SecurityConstants.CLAIM_USER_ID, userId.toString())
                 .claim(SecurityConstants.CLAIM_USERNAME, username)
                 .claim(SecurityConstants.TOKEN_TYPE, tokenType.getValue())
+                .issuer(issuer)
                 .issuedAt(issuedAt)
                 .expiration(expiration)
                 .signWith(rsaKeyProvider.getPrivateKey(), Jwts.SIG.RS256);
@@ -69,6 +72,7 @@ public class JwtTokenProvider {
         try {
             return Jwts.parser()
                     .verifyWith(rsaKeyProvider.getPublicKey())
+                    .requireIssuer(issuer)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
@@ -85,6 +89,7 @@ public class JwtTokenProvider {
         try{
             return Jwts.parser()
                     .verifyWith(rsaKeyProvider.getPublicKey())
+                    .requireIssuer(issuer)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();

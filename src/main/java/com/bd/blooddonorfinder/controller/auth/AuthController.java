@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +49,8 @@ public class AuthController {
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletRequest httpRequest) {
 
-        log.info("Login attempt with email/phone = {}", loginRequest.getIdentifier());
+        // Never log the raw identifier: it is an email address or phone number.
+        log.info("Login attempt received");
         SondhanClientContext clientContext = Utils.buildClientContext(httpRequest);
 
         try {
@@ -129,7 +129,7 @@ public class AuthController {
     @PostMapping("/verify-otp")
     @Operation(summary = "Verify OTP", description = "Verify OTP for registration or 2FA login")
     public ResponseEntity<RestApiResponse<AuthResponse>> verifyOtp(
-            @NotNull @Valid @RequestBody VerifyOtpRequest verifyOtpRequest,
+            @Valid @RequestBody VerifyOtpRequest verifyOtpRequest,
             HttpServletRequest httpServletRequest) {
 
         log.debug("Verifying otp for userId: {}, purpose: {}",

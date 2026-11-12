@@ -5,9 +5,6 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.web.filter.ForwardedHeaderFilter;
 
 @Configuration
 public class TrustedProxyConfig {
@@ -26,12 +23,11 @@ public class TrustedProxyConfig {
         this.trustedProxyRegex = trustedProxyRegex;
     }
 
-    @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)
-    public ForwardedHeaderFilter forwardedHeaderFilter() {
-        return new ForwardedHeaderFilter();
-    }
-
+    /**
+     * RemoteIpValve only honours X-Forwarded-* headers when the direct peer is
+     * in the trusted-proxy allow-list. A standalone ForwardedHeaderFilter would
+     * trust those headers from any client and allow remote-address spoofing.
+     */
     @Bean
     public WebServerFactoryCustomizer<TomcatServletWebServerFactory> remoteIpValveCustomizer() {
         return factory -> factory.addContextCustomizers(context -> {
@@ -39,8 +35,8 @@ public class TrustedProxyConfig {
             valve.setTrustedProxies(trustedProxyRegex);
             valve.setRemoteIpHeader("X-Forwarded-For");
             valve.setProtocolHeader("X-Forwarded-Proto");
+            valve.setProtocolHeaderHttpsValue("https");
             context.getPipeline().addValve(valve);
         });
     }
-
 }

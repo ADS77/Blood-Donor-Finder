@@ -52,6 +52,7 @@ public class SondhanAuthService implements AuthService {
     private final AuditService auditService;
     private final JwtTokenProvider tokenProvider;
     private final TokenStorageService tokenStorageService;
+    private final AuthFailureRateLimiter authFailureRateLimiter;
 
     /**
      * A valid BCrypt hash used to keep the response time of "unknown user"
@@ -66,7 +67,8 @@ public class SondhanAuthService implements AuthService {
                               OtpService otpService,
                               AuditService auditService,
                               JwtTokenProvider tokenProvider,
-                              TokenStorageService tokenStorageService) {
+                              TokenStorageService tokenStorageService,
+                              AuthFailureRateLimiter authFailureRateLimiter) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
@@ -74,55 +76,80 @@ public class SondhanAuthService implements AuthService {
         this.auditService = auditService;
         this.tokenProvider = tokenProvider;
         this.tokenStorageService = tokenStorageService;
+        this.authFailureRateLimiter = authFailureRateLimiter;
         this.dummyPasswordHash = passwordEncoder.encode("dummy-" + UUID.randomUUID());
     }
 
     @Override
     @Transactional(readOnly = true)
     public RestApiResponse<AuthResponse> login(LoginRequest loginRequest, SondhanClientContext clientContext) {
-        String identifier = normalizeIdentifier(loginRequest.getIdentifier());
-        LoginIdentifierType identifierType = LoginIdentifierResolver.resolve(identifier);
+        String ipAddress = clientContext.getIpAddress();
+        String subject = "unknown";
+        boolean limitChecked = false;
 
-        User user;
         try {
-            user = userService.findByIdentifier(identifier, identifierType);
-        } catch (AuthException | UserNotFoundException e) {
-            // Run a hash comparison anyway so that an attacker cannot reliably
-            // distinguish "unknown account" from "wrong password" by timing.
-            passwordEncoder.matches(loginRequest.getPassword(), dummyPasswordHash);
-            log.warn("Login failed: no account for identifier type={}, ip={}",
-                    identifierType, clientContext.getIpAddress());
-            throw new BadCredentialsException("Invalid credentials");
+            String identifier = normalizeIdentifier(loginRequest.getIdentifier());
+            LoginIdentifierType identifierType = LoginIdentifierResolver.resolve(identifier);
+
+            User user;
+            try {
+                user = userService.findByIdentifier(identifier, identifierType);
+            } catch (AuthException | UserNotFoundException e) {
+                // Unknown accounts share one per-IP bucket because there is no
+                // user id to scope the counter to.
+                authFailureRateLimiter.checkAllowed("login", ipAddress, subject);
+                limitChecked = true;
+                // Run a hash comparison anyway so that an attacker cannot reliably
+                // distinguish "unknown account" from "wrong password" by timing.
+                passwordEncoder.matches(loginRequest.getPassword(), dummyPasswordHash);
+                log.warn("Login failed: no account for identifier type={}, ip={}",
+                        identifierType, ipAddress);
+                throw new BadCredentialsException("Invalid credentials");
+            }
+
+            subject = "user:" + user.getId();
+            authFailureRateLimiter.checkAllowed("login", ipAddress, subject);
+            limitChecked = true;
+
+            if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                auditService.log(AuditEvent.LOGIN, user.getId(),
+                        clientContext.getIpAddress(), clientContext.getUserAgent(), LOGIN_FAILED_METADATA);
+                log.warn("Login failed: invalid password for userId={}, ip={}",
+                        user.getId(), ipAddress);
+                throw new BadCredentialsException("Invalid credentials");
+            }
+
+            validateLoginAllowed(user, clientContext);
+
+            UserPrincipal principal = userDetailsService.buildPrincipal(user);
+            TokenResponse tokenResponse;
+            try {
+                tokenResponse = tokenProvider.getTokenPair(principal);
+            } catch (InvalidJwtTokenException e) {
+                log.error("Failed to create token pair for userId: {}", user.getId(), e);
+                throw new AuthenticationServiceException("Unable to complete authentication", e);
+            }
+
+            auditService.log(AuditEvent.LOGIN, principal.getId(),
+                    clientContext.getIpAddress(), clientContext.getUserAgent(), "{\"success\":true}");
+            log.info("Login successful for userId={}, ip={}", principal.getId(), clientContext.getIpAddress());
+
+            AuthResponse authResponse = AuthResponse.builder()
+                    .username(principal.getUsername())
+                    .tokenResponse(tokenResponse)
+                    .build();
+            return RestApiResponse.success(authResponse, "Login successful");
+        } catch (RuntimeException e) {
+            if (!(e instanceof RateLimitExceededException)) {
+                // Failures raised before the subject is resolved (for example a
+                // malformed identifier) still consume the per-IP budget.
+                if (!limitChecked) {
+                    authFailureRateLimiter.checkAllowed("login", ipAddress, subject);
+                }
+                authFailureRateLimiter.recordFailure("login", ipAddress, subject);
+            }
+            throw e;
         }
-
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            auditService.log(AuditEvent.LOGIN, user.getId(),
-                    clientContext.getIpAddress(), clientContext.getUserAgent(), LOGIN_FAILED_METADATA);
-            log.warn("Login failed: invalid password for userId={}, ip={}",
-                    user.getId(), clientContext.getIpAddress());
-            throw new BadCredentialsException("Invalid credentials");
-        }
-
-        validateLoginAllowed(user, clientContext);
-
-        UserPrincipal principal = userDetailsService.buildPrincipal(user);
-        TokenResponse tokenResponse;
-        try {
-            tokenResponse = tokenProvider.getTokenPair(principal);
-        } catch (InvalidJwtTokenException e) {
-            log.error("Failed to create token pair for userId: {}", user.getId(), e);
-            throw new AuthenticationServiceException("Unable to complete authentication", e);
-        }
-
-        auditService.log(AuditEvent.LOGIN, principal.getId(),
-                clientContext.getIpAddress(), clientContext.getUserAgent(), "{\"success\":true}");
-        log.info("Login successful for userId={}, ip={}", principal.getId(), clientContext.getIpAddress());
-
-        AuthResponse authResponse = AuthResponse.builder()
-                .username(principal.getUsername())
-                .tokenResponse(tokenResponse)
-                .build();
-        return RestApiResponse.success(authResponse, "Login successful");
     }
 
     @Override
@@ -202,7 +229,7 @@ public class SondhanAuthService implements AuthService {
             throw new InvalidJwtTokenException("Malformed refresh token", TokenErrorReason.MALFORMED);
         }
 
-        if (!tokenStorageService.isRefreshTokenWhitelisted(jti)) {
+        if (!tokenStorageService.consumeRefreshToken(jti)) {
             // A validly signed refresh token that is no longer whitelisted means
             // it has already been rotated. Treat this as possible token theft.
             log.warn("Refresh token reuse detected for userId={}, jti={}", userId, jti);
@@ -229,9 +256,7 @@ public class SondhanAuthService implements AuthService {
                     TokenErrorReason.REVOKED);
         }
 
-        // Rotate: the old refresh token must never be usable again.
-        tokenStorageService.revokeRefreshToken(jti);
-
+        // The old refresh token was already consumed atomically above.
         UserPrincipal principal = userDetailsService.buildPrincipal(user);
         TokenResponse tokenResponse = tokenProvider.getTokenPair(principal);
 
@@ -245,68 +270,80 @@ public class SondhanAuthService implements AuthService {
     @Override
     @Transactional
     public RestApiResponse<AuthResponse> verifyOtp(SondhanClientContext clientContext, VerifyOtpRequest request) {
-        OtpPurpose purpose = Utils.parseOtpPurpose(request.getPurpose());
-        User user = userService.findById(request.getUserId());
-        validateOtpPurpose(user, purpose);
+        String ipAddress = clientContext.getIpAddress();
+        String subject = request.getUserId() != null ? request.getUserId().toString() : "unknown";
+        String scope = "verify-otp:" + Utils.otpPurposeKey(request.getPurpose());
+        authFailureRateLimiter.checkAllowed(scope, ipAddress, subject);
+
         try {
-            log.debug("Verifying otp for purpose : {}...", purpose);
-            otpService.verifyOtp(user, request.getOtp(), purpose);
-        } catch (InvalidOtpException | OtpExpiredException e) {
-            log.warn("Failed to verify Otp for userId: {}, purpose: {}, cause: {}",
-                    request.getUserId(), purpose, e.getMessage());
-            auditService.log(AuditEvent.OTP_FAILED,
-                    user.getId(),
+            OtpPurpose purpose = Utils.parseOtpPurpose(request.getPurpose());
+            User user = userService.findById(request.getUserId());
+            validateOtpPurpose(user, purpose);
+            try {
+                log.debug("Verifying otp for purpose : {}...", purpose);
+                otpService.verifyOtp(user, request.getOtp(), purpose);
+            } catch (InvalidOtpException | OtpExpiredException e) {
+                log.warn("Failed to verify Otp for userId: {}, purpose: {}, cause: {}",
+                        request.getUserId(), purpose, e.getMessage());
+                auditService.log(AuditEvent.OTP_FAILED,
+                        user.getId(),
+                        clientContext.getIpAddress(),
+                        clientContext.getUserAgent(),
+                        "{\"purpose\":\"" + purpose + "\"}");
+                throw e;
+            } catch (OtpAlreadyUsedException e) {
+                auditService.log(
+                        AuditEvent.OTP_REUSE_ATTEMPT,
+                        user.getId(),
+                        clientContext.getIpAddress(),
+                        clientContext.getUserAgent(),
+                        "{\"purpose\":\"" + purpose + "\"}"
+                );
+                throw e;
+            }
+
+            completeOtpVerification(user, purpose);
+            userService.saveUser(user);
+
+            if (!purpose.isIssueAuthToken()) {
+                log.debug("Otp verification successful, purpose : {}, no auth token issued", purpose);
+                auditService.log(
+                        AuditEvent.OTP_VERIFIED,
+                        user.getId(),
+                        clientContext.getIpAddress(),
+                        clientContext.getUserAgent(),
+                        "{\"purpose\":\"" + purpose + "\"}"
+                );
+                return RestApiResponse.success(AuthResponse.builder().build(), "OTP verified");
+            }
+
+            User reloadedUser = userService.getUserWithRolePermissions(user.getId());
+            UserPrincipal principal = userDetailsService.buildPrincipal(reloadedUser);
+            TokenResponse tokenResponse;
+            try {
+                tokenResponse = tokenProvider.getTokenPair(principal);
+            } catch (InvalidJwtTokenException e) {
+                log.error("Failed to create token pair for userId: {}...", user.getId(), e);
+                throw new AuthenticationServiceException("Unable to complete authentication", e);
+            }
+
+            log.debug("......After successful otp verification for:{}, auth token created...", purpose);
+            auditService.log(AuditEvent.OTP_VERIFIED,
+                    principal.getId(),
                     clientContext.getIpAddress(),
-                    clientContext.getUserAgent(),
-                    "{\"purpose\":\"" + purpose + "\"}");
+                    clientContext.getUserAgent());
+
+            AuthResponse authResponse = AuthResponse.builder()
+                    .username(principal.getUsername())
+                    .tokenResponse(tokenResponse)
+                    .build();
+            return RestApiResponse.success(authResponse, "OTP verified");
+        } catch (RuntimeException e) {
+            if (!(e instanceof RateLimitExceededException)) {
+                authFailureRateLimiter.recordFailure(scope, ipAddress, subject);
+            }
             throw e;
-        } catch (OtpAlreadyUsedException e) {
-            auditService.log(
-                    AuditEvent.OTP_REUSE_ATTEMPT,
-                    user.getId(),
-                    clientContext.getIpAddress(),
-                    clientContext.getUserAgent(),
-                    "{\"purpose\":\"" + purpose + "\"}"
-            );
-            throw e;
         }
-
-        completeOtpVerification(user, purpose);
-        userService.saveUser(user);
-
-        if (!purpose.isIssueAuthToken()) {
-            log.debug("Otp verification successful, purpose : {}, no auth token issued", purpose);
-            auditService.log(
-                    AuditEvent.OTP_VERIFIED,
-                    user.getId(),
-                    clientContext.getIpAddress(),
-                    clientContext.getUserAgent(),
-                    "{\"purpose\":\"" + purpose + "\"}"
-            );
-            return RestApiResponse.success(AuthResponse.builder().build(), "OTP verified");
-        }
-
-        User reloadedUser = userService.getUserWithRolePermissions(user.getId());
-        UserPrincipal principal = userDetailsService.buildPrincipal(reloadedUser);
-        TokenResponse tokenResponse;
-        try {
-            tokenResponse = tokenProvider.getTokenPair(principal);
-        } catch (InvalidJwtTokenException e) {
-            log.error("Failed to create token pair for userId: {}...", user.getId(), e);
-            throw new AuthenticationServiceException("Unable to complete authentication", e);
-        }
-
-        log.debug("......After successful otp verification for:{}, auth token created...", purpose);
-        auditService.log(AuditEvent.OTP_VERIFIED,
-                principal.getId(),
-                clientContext.getIpAddress(),
-                clientContext.getUserAgent());
-
-        AuthResponse authResponse = AuthResponse.builder()
-                .username(principal.getUsername())
-                .tokenResponse(tokenResponse)
-                .build();
-        return RestApiResponse.success(authResponse, "OTP verified");
     }
 
     private String normalizeIdentifier(String identifier) {
@@ -383,6 +420,10 @@ public class SondhanAuthService implements AuthService {
     }
 
     private void validateOtpPurpose(User user, OtpPurpose purpose) {
+        if (user.isLocked()) {
+            throw new AccountLockedException(ErrorCode.ACCOUNT_LOCKED,
+                    "User account is locked. Try again after: " + user.getLockedUntil());
+        }
         switch (purpose) {
             case REGISTER -> validateRegistrationOtp(user);
             case LOGIN -> validateLoginOtp(user);
@@ -393,7 +434,8 @@ public class SondhanAuthService implements AuthService {
 
     private void validateRegistrationOtp(User user) {
         if (Boolean.TRUE.equals(user.getIsVerified())) {
-            throw new IllegalStateException("User is already registered and verified");
+            throw new AuthException(ErrorCode.ALREADY_VERIFIED,
+                    "User is already registered and verified");
         }
     }
 
