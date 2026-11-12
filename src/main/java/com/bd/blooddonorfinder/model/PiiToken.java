@@ -1,6 +1,7 @@
 package com.bd.blooddonorfinder.model;
 
 import com.bd.blooddonorfinder.model.enums.PiiType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -19,9 +20,11 @@ public class PiiToken {
     private PiiType piiType;
 
     @Column(name = "value_hash", nullable = false, unique = true, updatable = false, length = 64)
+    @JsonIgnore
     private String valueHash;
 
     @Column(name = "encrypted_value", nullable = false)
+    @JsonIgnore
     private byte[] encryptedValue;
 
     @Column(nullable = false, updatable = false)

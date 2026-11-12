@@ -6,6 +6,7 @@ import com.bd.blooddonorfinder.model.es.Location;
 import com.bd.blooddonorfinder.utils.constants.ElasticIndexes;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,10 +34,14 @@ public class DonorSearchDocument implements Serializable {
     @Field(type = FieldType.Text)
     private String name;
 
+    // Contact details are accepted on ingest but never serialized back to
+    // clients, so donor search responses cannot be scraped for PII.
     @Field(type = FieldType.Keyword)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String email;
 
     @Field(type = FieldType.Keyword)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String phone;
 
     @Field(type = FieldType.Keyword)

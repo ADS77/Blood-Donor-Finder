@@ -37,6 +37,7 @@ public class User {
             name = "phone_token_id",
             foreignKey = @ForeignKey(name = "fk_app_user_phone_token")
     )
+    @JsonIgnore
     private PiiToken phoneToken;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,6 +45,7 @@ public class User {
             name = "email_token_id",
             foreignKey = @ForeignKey(name = "fk_app_user_email_token")
     )
+    @JsonIgnore
     private PiiToken emailToken;
 
     @Column(name = "password", nullable = false)
@@ -69,9 +71,11 @@ public class User {
     private boolean isActive;
 
     @Column(name = "failed_otp_attempts", nullable = false)
+    @JsonIgnore
     private int failedOtpAttempts;
 
     @Column(name = "locked_until")
+    @JsonIgnore
     private Instant lockedUntil;
 
     @Column(name = "is_available")
@@ -102,9 +106,11 @@ public class User {
 
     @Version
     @Column(name = "version")
+    @JsonIgnore
     private Long version;
 
     @Column(nullable = false)
+    @JsonIgnore
     private boolean enabled = true;
 
     public User(String firstName, String lastName, BloodGroup bloodGroup) {

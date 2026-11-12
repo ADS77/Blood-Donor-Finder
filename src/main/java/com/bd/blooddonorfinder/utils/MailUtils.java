@@ -31,16 +31,32 @@ public class MailUtils {
             <p>Best regards,<br/>
             %s</p>
             """,
-                    safeNull(recipientName, "Donor"),
-                    safeNull(geoLocation, "our center"),
-                    safeNull(geoLocation, "our center"),
-                    safeNull(phoneNumber, "N/A"),
-                    safeNull(organizationName, "TEAM SONDHAN")
+                    safeHtml(recipientName, "Donor"),
+                    safeHtml(geoLocation, "our center"),
+                    safeHtml(geoLocation, "our center"),
+                    safeHtml(phoneNumber, "N/A"),
+                    safeHtml(organizationName, "TEAM SONDHAN")
             );
     }
 
     private static String safeNull(String value, String defaultValue) {
             return value == null || value.trim().isEmpty() ? defaultValue : value;
+    }
+
+    private static String safeHtml(String value, String defaultValue) {
+        return escapeHtml(safeNull(value, defaultValue));
+    }
+
+    /**
+     * Escapes values interpolated into HTML email bodies so user-controlled
+     * names or locations cannot inject markup/phishing links into the message.
+     */
+    private static String escapeHtml(String value) {
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     public static String buildHtmlBodyForOtpMsg(String recipientName,
@@ -162,12 +178,12 @@ public class MailUtils {
                 </body>
                 </html>
                 """.formatted(
-                organizationName,
-                recipientName,
-                organizationName,
-                otp,
-                organizationName,
-                organizationName
+                safeHtml(organizationName, "Team Sondhan"),
+                safeHtml(recipientName, "Donor"),
+                safeHtml(organizationName, "Team Sondhan"),
+                safeHtml(otp, ""),
+                safeHtml(organizationName, "Team Sondhan"),
+                safeHtml(organizationName, "Team Sondhan")
         );
     }
 

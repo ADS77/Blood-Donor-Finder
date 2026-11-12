@@ -16,8 +16,9 @@ public class RestApiResponse<T>  {
     private ErrorDetails error;
 
     public static <T> RestApiResponse<T> of (T data){
-        RestApiResponse<T> response = new RestApiResponse<T>();
-        response.getSuccess().setData(data);
+        RestApiResponse<T> response = new RestApiResponse<>();
+        response.setSuccess(new SuccessDetails<>(data));
+        response.setStatus(HttpStatus.OK);
         return response;
     }
 

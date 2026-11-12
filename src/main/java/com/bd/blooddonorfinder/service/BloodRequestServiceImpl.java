@@ -1,5 +1,6 @@
 package com.bd.blooddonorfinder.service;
 
+import com.bd.blooddonorfinder.exception.UserNotFoundException;
 import com.bd.blooddonorfinder.model.BloodRequest;
 import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
@@ -10,13 +11,14 @@ import com.bd.blooddonorfinder.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
-public class BloodRequestServiceImpl implements  BloodRequestService{
+public class BloodRequestServiceImpl implements BloodRequestService {
     private final BloodRequestRepository bloodRequestRepository;
     private final UserRepository userRepository;
 
@@ -26,33 +28,23 @@ public class BloodRequestServiceImpl implements  BloodRequestService{
     }
 
     @Override
-    public RestApiResponse<BloodRequest> createBloodRequest(BloodRequestDto bloodRequestDto) {
-        Optional<User> optionalRequester = Optional.ofNullable(userRepository.findById(bloodRequestDto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found")));
-        BloodRequest bloodRequest = new BloodRequest();
-        RestApiResponse<BloodRequest> response = new RestApiResponse<>();
-        if(optionalRequester.isPresent()){
-            try {
-                bloodRequest.setRequester(optionalRequester.get());
-                bloodRequest.setBloodGroup(bloodRequestDto.getNeededBloodGroup());
-                bloodRequest.setGeoLocation(bloodRequestDto.getGeoLocation());
-                bloodRequest.setRequiredQuantity(bloodRequestDto.getQuantity());
-                bloodRequest.setStatus(RequestStatus.PENDING);
-                bloodRequest.setRequestTime(LocalDateTime.now());
-                bloodRequest.setMessage(bloodRequestDto.getMessage());
+    @Transactional
+    public RestApiResponse<BloodRequest> createBloodRequest(UUID requesterId, BloodRequestDto bloodRequestDto) {
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-                bloodRequestRepository.save(bloodRequest);
-                log.debug("Blood Request Created");
-                response.getSuccess().setData(bloodRequest);
-                response.getSuccess().setMessage("Blood Request Created");
-                response.setStatus(HttpStatus.OK);
-            }
-            catch (Exception e){
-                log.error("Failed to process blood request: {}", e.getMessage());
-                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-                response.setMessage("Failed to process blood request");
-            }
-        }
-        return  response;
+        BloodRequest bloodRequest = new BloodRequest();
+        bloodRequest.setRequester(requester);
+        bloodRequest.setBloodGroup(bloodRequestDto.getNeededBloodGroup());
+        bloodRequest.setGeoLocation(bloodRequestDto.getGeoLocation());
+        bloodRequest.setRequiredQuantity(bloodRequestDto.getQuantity());
+        bloodRequest.setStatus(RequestStatus.PENDING);
+        bloodRequest.setRequestTime(LocalDateTime.now());
+        bloodRequest.setMessage(bloodRequestDto.getMessage());
+
+        BloodRequest saved = bloodRequestRepository.save(bloodRequest);
+        log.debug("Blood request {} created by userId={}", saved.getId(), requesterId);
+
+        return RestApiResponse.success(saved, "Blood Request Created");
     }
 }
