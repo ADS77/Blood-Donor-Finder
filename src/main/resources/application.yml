@@ -5,24 +5,20 @@ spring:
       namespace: bdf-portal
       flush-mode: immediate
 
+  # Datasource is configured in application.properties using environment
+  # variables. Do not add credentials here.
 
-  datasource:
-    url: jdbc:postgresql://localhost:5432/bd_db
-    username: bduser
-    password: bdpassword
-    driver-class-name: org.postgresql.Driver
-
-    jpa:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
       hibernate:
-        ddl-auto: validate
-      properties:
-        hibernate:
-          format_sql: true
-      show-sql: false
+        format_sql: false
+    show-sql: false
 
-    sql:
-      init:
-        mode: never
+  sql:
+    init:
+      mode: never
 
   flyway:
     enabled: true
@@ -46,6 +42,3 @@ sondhan:
       - ${CORS_ORIGIN_1:http://localhost:3000}
       - ${CORS_ORIGIN_2:http://localhost:3001}
       - ${CORS_ORIGIN_3:http://localhost:3002}
-
-  pii:
-    encryption-key: "@#$Ad01100110010110011001@#$"
