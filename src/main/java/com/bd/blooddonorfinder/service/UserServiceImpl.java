@@ -21,6 +21,7 @@ import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.repository.auth.RoleRepository;
 import com.bd.blooddonorfinder.security.AppPermissions;
 import com.bd.blooddonorfinder.service.audit.AuditService;
+import com.bd.blooddonorfinder.service.otp.OtpIssuanceService;
 import com.bd.blooddonorfinder.utils.PiiTokenizer;
 import com.bd.blooddonorfinder.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,7 @@ public class UserServiceImpl implements UserService{
     private final GeoLocationService geoLocationService;
     private final PiiTokenizer piiTokenizer;
     private final RoleRepository roleRepository;
-    private final OtpService otpService;
+    private final OtpIssuanceService otpIssuanceService;
     private final AuditService auditService;
 
     public UserServiceImpl(UserRepository userRepository,
@@ -56,7 +57,7 @@ public class UserServiceImpl implements UserService{
                            GeoLocationService geoLocationService,
                            PiiTokenizer piiTokenizer,
                            RoleRepository roleRepository,
-                           OtpService otpService,
+                           OtpIssuanceService otpIssuanceService,
                            AuditService auditService) {
         this.userRepository = userRepository;
         this.eventProducer = eventProducer;
@@ -64,7 +65,7 @@ public class UserServiceImpl implements UserService{
         this.geoLocationService = geoLocationService;
         this.piiTokenizer = piiTokenizer;
         this.roleRepository = roleRepository;
-        this.otpService = otpService;
+        this.otpIssuanceService = otpIssuanceService;
         this.auditService = auditService;
     }
 
@@ -104,7 +105,7 @@ public class UserServiceImpl implements UserService{
         newUser.setIsVerified(false);
         newUser.setActive(false);
         User savedUser = userRepository.save(newUser);
-        int ttl = otpService.generateAndSend(savedUser, OtpPurpose.REGISTER);
+        int ttl = otpIssuanceService.issue(savedUser, OtpPurpose.REGISTER);
         if(ttl > 0){
             auditService.log(AuditEvent.REGISTER, savedUser.getId(), ipAddress, userAgent);
             auditService.log(AuditEvent.OTP_SENT, savedUser.getId(), ipAddress, userAgent,
@@ -291,15 +292,28 @@ public class UserServiceImpl implements UserService{
                     new TransactionSynchronization() {
                         @Override
                         public void afterCommit() {
-                            eventProducer.publishEvent(event);
-                            log.info("User register event published after commit: eventId={}, aggregateId={}",
-                                    event.getEventId(), event.getAggregateId());
+                            publishSafely(event);
                         }
                     }
             );
         }
         else {
+            publishSafely(event);
+        }
+    }
+
+    /**
+     * A downstream event failure must not turn an already-committed
+     * registration or OTP verification into an error response for the client.
+     */
+    private void publishSafely(BaseEvent event) {
+        try {
             eventProducer.publishEvent(event);
+            log.info("User register event published: eventId={}, aggregateId={}",
+                    event.getEventId(), event.getAggregateId());
+        } catch (Exception e) {
+            log.error("Failed to publish user-registered event: eventId={}, aggregateId={}",
+                    event.getEventId(), event.getAggregateId(), e);
         }
     }
 

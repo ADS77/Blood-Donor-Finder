@@ -28,6 +28,8 @@ public interface OtpCodeRepository extends JpaRepository<OtpCode, UUID> {
                                     @Param("purpose") OtpPurpose purpose,
                                     @Param("now") Instant now);
 
+    Optional<OtpCode> findFirstByUserAndPurposeOrderByCreatedAtDesc(User user, OtpPurpose purpose);
+
     @Modifying
     @Query(
             """
