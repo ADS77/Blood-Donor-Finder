@@ -48,7 +48,9 @@ class EmailNotificationConsumerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper().findAndRegisterModules();
+        // Plain mapper: the consumer must not depend on optional modules such
+        // as parameter-names being registered in the running application.
+        objectMapper = new ObjectMapper();
         cipher = new EmailPayloadCipher("unit-test-key");
         consumer = new EmailNotificationConsumer(
                 mailService, processedEventStore, cipher, objectMapper, deliveryTracker);

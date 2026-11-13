@@ -5,17 +5,27 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Deserialized from the encrypted Kafka payload, so it must be constructible
+ * by Jackson without relying on parameter-name introspection. A no-args
+ * constructor plus setters is the most portable option: it works with any
+ * {@link com.fasterxml.jackson.databind.ObjectMapper} configuration.
+ */
 @Getter
 @Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SendMailRequest implements Serializable {
 
     private String mailFrom;

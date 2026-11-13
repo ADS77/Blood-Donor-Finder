@@ -55,7 +55,17 @@ public class EmailNotificationConsumerConfig {
                 return;
             }
 
-            String error = exception != null ? exception.getMessage() : "unknown delivery failure";
+            Throwable rootCause = rootCause(exception);
+            String error = rootCause != null && rootCause.getMessage() != null
+                    ? rootCause.getMessage()
+                    : "unknown delivery failure";
+            // Log the whole chain (including the listener wrapper) so the
+            // actionable cause is visible instead of just "listener threw".
+            log.error("Dead-lettering email notification: eventId={}, type={}, topic={}, partition={}, "
+                            + "offset={}, rootCause={}",
+                    event.getEventId(), event.getNotificationType(), record.topic(),
+                    record.partition(), record.offset(), rootCause, exception);
+
             try {
                 deliveryTracker.markFailed(event.getEventId(), error);
             } catch (RuntimeException trackerError) {
@@ -76,6 +86,17 @@ public class EmailNotificationConsumerConfig {
         // A corrupt or undecryptable payload cannot succeed on retry.
         errorHandler.addNotRetryableExceptions(EmailPayloadException.class);
         return errorHandler;
+    }
+
+    private static Throwable rootCause(Throwable throwable) {
+        if (throwable == null) {
+            return null;
+        }
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     @Bean
