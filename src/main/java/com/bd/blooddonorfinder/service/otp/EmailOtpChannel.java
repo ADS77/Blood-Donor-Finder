@@ -45,15 +45,17 @@ public class EmailOtpChannel implements OtpChannel {
     @Override
     public boolean send(OtpMessage message) {
         try {
-            boolean sent = notificationManager.notifyByMail(
+            // true means the notification was durably enqueued in the
+            // transactional outbox. The Kafka consumer owns the SMTP attempt.
+            boolean queued = notificationManager.notifyByMail(
                     message.user(),
                     message.recipient(),
                     message.otp(),
                     message.purpose().name());
-            if (!sent) {
-                log.error("Failed to send OTP by email, userId: {}", message.user().getId());
+            if (!queued) {
+                log.error("Failed to queue OTP email, userId: {}", message.user().getId());
             }
-            return sent;
+            return queued;
         } catch (Exception e) {
             // Log the cause server-side, but never surface mail-server
             // details (hosts, response codes) to the caller.
