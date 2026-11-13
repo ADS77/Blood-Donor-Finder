@@ -29,7 +29,12 @@ public interface OtpChannel {
 
     /**
      * Delivers the OTP. Returns {@code false} when the provider rejects the
-     * message without throwing.
+     * message without throwing, or throws
+     * {@link com.bd.blooddonorfinder.exception.AuthException} with
+     * {@code ErrorCode.OTP_SEND_FAILED} when the provider fails. The delivery
+     * service treats both outcomes as a channel failure and tries the next
+     * reachable channel. Any other exception is treated as a programming or
+     * infrastructure error and propagates to the caller.
      */
     boolean send(OtpMessage message);
 }

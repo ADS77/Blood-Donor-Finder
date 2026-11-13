@@ -92,8 +92,12 @@ service account, never in the repository.
   generic server error: `INVALID_OTP` (400), `OTP_EXPIRED` (400),
   `OTP_ALREADY_USED` (409), `ALREADY_VERIFIED` (409), `ACCOUNT_LOCKED` (403),
   `UNSUPPORTED_OTP_PURPOSE` (400) and `RATE_LIMITED` (429).
-- OTP delivery is channel-based. Email is the default `OtpChannel`; an SMS
-  channel can be added without changing OTP generation, hashing or verification.
+- OTP delivery is channel-agnostic. Channels are tried in `@Order` order and a
+  new channel (for example SMS) can be added without changing OTP generation,
+  hashing, verification or the delivery service. If no channel can reach the
+  user the API returns `OTP_DELIVERY_UNAVAILABLE` (400); if every reachable
+  channel fails, it returns `OTP_SEND_FAILED` (502). Provider details are only
+  logged server-side.
 - JWTs are validated for signature, expiry and issuer. Only `ACCESS_TOKEN`
   tokens are accepted by the authentication filter.
 

@@ -12,9 +12,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Selects the first channel that can reach the user and delivers the OTP.
- * Channels are ordered by Spring, so email is preferred while an SMS channel
- * can be added later without touching this class.
+ * Delivers an OTP through any registered {@link OtpChannel}.
+ *
+ * <p>This service is intentionally channel-agnostic: it knows only that a
+ * channel may be able to resolve a recipient and send a message. Spring
+ * injects the channels in {@code @Order} order, so the preferred channel is
+ * tried first and later channels act as fallbacks.</p>
+ *
+ * <p>Delivery failures use a stable error contract:
+ * {@link ErrorCode#OTP_DELIVERY_UNAVAILABLE} when no channel can reach the
+ * user, and {@link ErrorCode#OTP_SEND_FAILED} when every reachable channel
+ * rejects the message.</p>
  */
 @Service
 public class OtpDeliveryService {
@@ -27,17 +35,49 @@ public class OtpDeliveryService {
         this.channels = List.copyOf(channels);
     }
 
-    public boolean deliver(User user, String otp, OtpPurpose purpose) {
+    /**
+     * Delivers the OTP, trying channels in order until one accepts it.
+     *
+     * @throws AuthException with {@link ErrorCode#OTP_DELIVERY_UNAVAILABLE}
+     *         when no channel can resolve a recipient for the user, or
+     *         {@link ErrorCode#OTP_SEND_FAILED} when all reachable channels
+     *         fail to send.
+     */
+    public void deliver(User user, String otp, OtpPurpose purpose) {
+        boolean reachable = false;
+
         for (OtpChannel channel : channels) {
             Optional<String> recipient = channel.resolveRecipient(user);
             if (recipient.isEmpty()) {
                 continue;
             }
-            log.debug("Delivering {} OTP to userId={} via {}", purpose, user.getId(), channel.type());
-            return channel.send(new OtpMessage(user, recipient.get(), otp, purpose));
+            reachable = true;
+            OtpMessage message = new OtpMessage(user, recipient.get(), otp, purpose);
+
+            try {
+                if (channel.send(message)) {
+                    log.debug("Delivered {} OTP to userId={} via {}",
+                            purpose, user.getId(), channel.type());
+                    return;
+                }
+                log.warn("Channel {} rejected {} OTP for userId={}",
+                        channel.type(), purpose, user.getId());
+            } catch (AuthException e) {
+                if (e.getErrorCode() != ErrorCode.OTP_SEND_FAILED) {
+                    throw e;
+                }
+                // A provider failure must not leak channel details to the
+                // client; try the next channel before reporting a failure.
+                log.warn("Channel {} failed to deliver {} OTP for userId={}",
+                        channel.type(), purpose, user.getId(), e);
+            }
         }
-        // Email is the only channel today. Keep the existing error contract
-        // until a channel-agnostic code is introduced alongside SMS.
-        throw new AuthException(ErrorCode.INVALID_EMAIL, "Email is not valid");
+
+        if (!reachable) {
+            throw new AuthException(ErrorCode.OTP_DELIVERY_UNAVAILABLE,
+                    "No delivery channel is available for this user");
+        }
+        throw new AuthException(ErrorCode.OTP_SEND_FAILED,
+                "Failed to send OTP. Please try again later.");
     }
 }

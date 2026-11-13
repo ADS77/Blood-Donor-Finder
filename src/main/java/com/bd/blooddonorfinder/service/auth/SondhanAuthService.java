@@ -161,17 +161,7 @@ public class SondhanAuthService implements AuthService {
         if (otpSentResponse == null) {
             throw new AuthException(ErrorCode.OTP_SEND_FAILED, "Failed to send OTP");
         }
-        if (otpSentResponse.errorResponse() == null && otpSentResponse.otpExpiresInSeconds() > 0) {
-            return Utils.buildSuccessRestResponse(HttpStatus.OK, otpSentResponse);
-        }
-        if (otpSentResponse.errorResponse() == null) {
-            throw new AuthException(ErrorCode.OTP_SEND_FAILED, "Failed to send OTP");
-        }
-        return Utils.buildErrorRestResponse(
-                HttpStatus.valueOf(otpSentResponse.errorResponse().getStatus()),
-                otpSentResponse.errorResponse().getErrorDetails().getField(),
-                otpSentResponse.errorResponse().getErrorDetails().getMessage()
-        );
+        return Utils.buildSuccessRestResponse(HttpStatus.OK, otpSentResponse);
     }
 
     @Override

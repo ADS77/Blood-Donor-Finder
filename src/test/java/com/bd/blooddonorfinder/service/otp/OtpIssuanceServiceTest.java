@@ -1,5 +1,7 @@
 package com.bd.blooddonorfinder.service.otp;
 
+import com.bd.blooddonorfinder.exception.AuthException;
+import com.bd.blooddonorfinder.exception.enums.ErrorCode;
 import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.OtpPurpose;
 import com.bd.blooddonorfinder.service.OtpService;
@@ -12,6 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +41,6 @@ class OtpIssuanceServiceTest {
     void issue_generatesThenDeliversOtp() {
         when(otpService.generate(user, OtpPurpose.REGISTER))
                 .thenReturn(new OtpService.GeneratedOtp("123456", 180));
-        when(otpDeliveryService.deliver(user, "123456", OtpPurpose.REGISTER)).thenReturn(true);
 
         assertEquals(180, issuanceService.issue(user, OtpPurpose.REGISTER));
 
@@ -46,11 +49,15 @@ class OtpIssuanceServiceTest {
     }
 
     @Test
-    void issue_returnsZeroWhenDeliveryIsRejected() {
+    void issue_propagatesDeliveryFailures() {
         when(otpService.generate(user, OtpPurpose.REGISTER))
                 .thenReturn(new OtpService.GeneratedOtp("123456", 180));
-        when(otpDeliveryService.deliver(user, "123456", OtpPurpose.REGISTER)).thenReturn(false);
+        doThrow(new AuthException(ErrorCode.OTP_SEND_FAILED, "delivery failed"))
+                .when(otpDeliveryService).deliver(user, "123456", OtpPurpose.REGISTER);
 
-        assertEquals(0, issuanceService.issue(user, OtpPurpose.REGISTER));
+        AuthException exception = assertThrows(AuthException.class,
+                () -> issuanceService.issue(user, OtpPurpose.REGISTER));
+
+        assertEquals(ErrorCode.OTP_SEND_FAILED, exception.getErrorCode());
     }
 }

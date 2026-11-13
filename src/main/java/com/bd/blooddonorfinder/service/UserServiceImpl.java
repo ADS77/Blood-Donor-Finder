@@ -35,7 +35,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -106,19 +105,10 @@ public class UserServiceImpl implements UserService{
         newUser.setActive(false);
         User savedUser = userRepository.save(newUser);
         int ttl = otpIssuanceService.issue(savedUser, OtpPurpose.REGISTER);
-        if(ttl > 0){
-            auditService.log(AuditEvent.REGISTER, savedUser.getId(), ipAddress, userAgent);
-            auditService.log(AuditEvent.OTP_SENT, savedUser.getId(), ipAddress, userAgent,
-                    "{\"purpose\":\"REGISTER\"}");
-            return new OtpSentResponse(savedUser.getId(),"OTP sent",ttl);
-        }
-        else {
-            ErrorResponse errorResponse = new ErrorResponse();
-            errorResponse.setStatus(HttpStatus.BAD_GATEWAY.value());
-            errorResponse.setTimestamp(LocalDateTime.now());
-            errorResponse.setErrorDetails(new ErrorDetails("otp", "Failed to send otp"));
-            return new OtpSentResponse(newUser.getId(), "Failed to send OTP", ttl, errorResponse);
-        }
+        auditService.log(AuditEvent.REGISTER, savedUser.getId(), ipAddress, userAgent);
+        auditService.log(AuditEvent.OTP_SENT, savedUser.getId(), ipAddress, userAgent,
+                "{\"purpose\":\"REGISTER\"}");
+        return new OtpSentResponse(savedUser.getId(),"OTP sent",ttl);
     }
 
     @Override

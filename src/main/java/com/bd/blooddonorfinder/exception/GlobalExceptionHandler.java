@@ -276,9 +276,10 @@ public class GlobalExceptionHandler {
             case UNAUTHORIZED, REFRESH_REUSE_ATTACK, TOKEN_EXPIRED, TOKEN_INVALID -> HttpStatus.UNAUTHORIZED;
             case RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
             case ACCOUNT_LOCKED, USER_NOT_VERIFIED -> HttpStatus.FORBIDDEN;
+            case OTP_SEND_FAILED -> HttpStatus.BAD_GATEWAY;
             case INVALID_OTP,
                  OTP_EXPIRED,
-                 OTP_SEND_FAILED,
+                 OTP_DELIVERY_UNAVAILABLE,
                  INVALID_REQUEST,
                  INVALID_EMAIL,
                  UNSUPPORTED_OTP_PURPOSE -> HttpStatus.BAD_REQUEST;

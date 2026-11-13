@@ -17,7 +17,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,7 +46,7 @@ class OtpDeliveryServiceTest {
         when(emailChannel.type()).thenReturn(OtpChannelType.EMAIL);
         when(emailChannel.send(any())).thenReturn(true);
 
-        assertTrue(deliveryService.deliver(user, "123456", OtpPurpose.REGISTER));
+        deliveryService.deliver(user, "123456", OtpPurpose.REGISTER);
 
         ArgumentCaptor<OtpMessage> message = ArgumentCaptor.forClass(OtpMessage.class);
         verify(emailChannel).send(message.capture());
@@ -64,7 +63,7 @@ class OtpDeliveryServiceTest {
         when(smsChannel.type()).thenReturn(OtpChannelType.SMS);
         when(smsChannel.send(any())).thenReturn(true);
 
-        assertTrue(deliveryService.deliver(user, "123456", OtpPurpose.LOGIN));
+        deliveryService.deliver(user, "123456", OtpPurpose.LOGIN);
 
         ArgumentCaptor<OtpMessage> message = ArgumentCaptor.forClass(OtpMessage.class);
         verify(smsChannel).send(message.capture());
@@ -73,13 +72,73 @@ class OtpDeliveryServiceTest {
     }
 
     @Test
-    void deliver_throwsWhenNoChannelCanReachUser() {
+    void deliver_fallsBackWhenFirstChannelRejectsMessage() {
+        when(emailChannel.resolveRecipient(user)).thenReturn(Optional.of("donor@example.com"));
+        when(emailChannel.type()).thenReturn(OtpChannelType.EMAIL);
+        when(emailChannel.send(any())).thenReturn(false);
+        when(smsChannel.resolveRecipient(user)).thenReturn(Optional.of("+8801700000000"));
+        when(smsChannel.type()).thenReturn(OtpChannelType.SMS);
+        when(smsChannel.send(any())).thenReturn(true);
+
+        deliveryService.deliver(user, "123456", OtpPurpose.LOGIN);
+
+        verify(emailChannel).send(any());
+        verify(smsChannel).send(any());
+    }
+
+    @Test
+    void deliver_fallsBackWhenFirstChannelProviderFails() {
+        when(emailChannel.resolveRecipient(user)).thenReturn(Optional.of("donor@example.com"));
+        when(emailChannel.type()).thenReturn(OtpChannelType.EMAIL);
+        when(emailChannel.send(any())).thenThrow(
+                new AuthException(ErrorCode.OTP_SEND_FAILED, "mail provider unavailable"));
+        when(smsChannel.resolveRecipient(user)).thenReturn(Optional.of("+8801700000000"));
+        when(smsChannel.type()).thenReturn(OtpChannelType.SMS);
+        when(smsChannel.send(any())).thenReturn(true);
+
+        deliveryService.deliver(user, "123456", OtpPurpose.LOGIN);
+
+        verify(emailChannel).send(any());
+        verify(smsChannel).send(any());
+    }
+
+    @Test
+    void deliver_throwsChannelAgnosticErrorWhenNoChannelCanReachUser() {
         when(emailChannel.resolveRecipient(user)).thenReturn(Optional.empty());
         when(smsChannel.resolveRecipient(user)).thenReturn(Optional.empty());
 
         AuthException exception = assertThrows(AuthException.class,
                 () -> deliveryService.deliver(user, "123456", OtpPurpose.REGISTER));
 
-        assertEquals(ErrorCode.INVALID_EMAIL, exception.getErrorCode());
+        assertEquals(ErrorCode.OTP_DELIVERY_UNAVAILABLE, exception.getErrorCode());
+    }
+
+    @Test
+    void deliver_throwsSendFailedWhenEveryReachableChannelFails() {
+        when(emailChannel.resolveRecipient(user)).thenReturn(Optional.of("donor@example.com"));
+        when(emailChannel.type()).thenReturn(OtpChannelType.EMAIL);
+        when(emailChannel.send(any())).thenReturn(false);
+        when(smsChannel.resolveRecipient(user)).thenReturn(Optional.of("+8801700000000"));
+        when(smsChannel.type()).thenReturn(OtpChannelType.SMS);
+        when(smsChannel.send(any())).thenThrow(
+                new AuthException(ErrorCode.OTP_SEND_FAILED, "sms provider unavailable"));
+
+        AuthException exception = assertThrows(AuthException.class,
+                () -> deliveryService.deliver(user, "123456", OtpPurpose.LOGIN));
+
+        assertEquals(ErrorCode.OTP_SEND_FAILED, exception.getErrorCode());
+    }
+
+    @Test
+    void deliver_propagatesErrorsThatAreNotProviderFailures() {
+        when(emailChannel.resolveRecipient(user)).thenReturn(Optional.of("donor@example.com"));
+        when(emailChannel.send(any())).thenThrow(
+                new AuthException(ErrorCode.INVALID_REQUEST, "malformed message"));
+
+        AuthException exception = assertThrows(AuthException.class,
+                () -> deliveryService.deliver(user, "123456", OtpPurpose.LOGIN));
+
+        assertEquals(ErrorCode.INVALID_REQUEST, exception.getErrorCode());
+        verify(smsChannel, never()).send(any());
     }
 }

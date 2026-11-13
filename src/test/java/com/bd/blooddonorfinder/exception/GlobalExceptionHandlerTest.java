@@ -114,6 +114,32 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void otpDeliveryUnavailable_shouldReturn400Response() {
+        MockHttpServletRequest request = authRequest("/sondhan/api/auth/register");
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleAuthException(
+                new AuthException(ErrorCode.OTP_DELIVERY_UNAVAILABLE,
+                        "No delivery channel is available for this user"),
+                request);
+
+        assertEquals(400, response.getStatusCode().value());
+        assertEquals("OTP_DELIVERY_UNAVAILABLE", response.getBody().getError());
+    }
+
+    @Test
+    void otpSendFailed_shouldReturn502Response() {
+        MockHttpServletRequest request = authRequest("/sondhan/api/auth/register");
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleAuthException(
+                new AuthException(ErrorCode.OTP_SEND_FAILED,
+                        "Failed to send OTP. Please try again later."),
+                request);
+
+        assertEquals(502, response.getStatusCode().value());
+        assertEquals("OTP_SEND_FAILED", response.getBody().getError());
+    }
+
+    @Test
     void validationFailureOnVerifyOtp_shouldCountAgainstIpUserAndPurpose() throws Exception {
         UUID userId = UUID.randomUUID();
         VerifyOtpRequest target = new VerifyOtpRequest();

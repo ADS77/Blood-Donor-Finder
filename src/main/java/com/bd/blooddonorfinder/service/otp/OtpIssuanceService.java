@@ -26,16 +26,15 @@ public class OtpIssuanceService {
     }
 
     /**
-     * Generates and delivers an OTP, returning its lifetime in seconds, or
-     * {@code 0} when the delivery provider rejected the message.
+     * Generates and delivers an OTP, returning its lifetime in seconds.
+     *
+     * @throws com.bd.blooddonorfinder.exception.AuthException when no channel
+     *         can reach the user or every reachable channel fails to send.
      */
     @Transactional
     public int issue(User user, OtpPurpose purpose) {
         OtpService.GeneratedOtp generatedOtp = otpService.generate(user, purpose);
-        boolean delivered = otpDeliveryService.deliver(user, generatedOtp.code(), purpose);
-        if (!delivered) {
-            return 0;
-        }
+        otpDeliveryService.deliver(user, generatedOtp.code(), purpose);
         log.info("OTP sent to user {}, purpose {}", user.getId(), purpose);
         return generatedOtp.ttlSeconds();
     }
