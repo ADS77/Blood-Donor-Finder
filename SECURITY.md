@@ -92,6 +92,10 @@ service account, never in the repository.
   generic server error: `INVALID_OTP` (400), `OTP_EXPIRED` (400),
   `OTP_ALREADY_USED` (409), `ALREADY_VERIFIED` (409), `ACCOUNT_LOCKED` (403),
   `UNSUPPORTED_OTP_PURPOSE` (400) and `RATE_LIMITED` (429).
+- `POST /api/auth/resend-otp` applies the same purpose validation, account-state
+  checks and delivery error contract as verification. A successful resend
+  invalidates any previous unused OTP for the same user and purpose. Issuance
+  is limited to 10 OTP requests per hour per email address and phone number.
 - OTP delivery is channel-agnostic. Channels are tried in `@Order` order and a
   new channel (for example SMS) can be added without changing OTP generation,
   hashing, verification or the delivery service. If no channel can reach the

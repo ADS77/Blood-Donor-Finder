@@ -14,6 +14,7 @@ import com.bd.blooddonorfinder.model.enums.OtpPurpose;
 import com.bd.blooddonorfinder.model.enums.TokenType;
 import com.bd.blooddonorfinder.payload.enums.LoginIdentifierType;
 import com.bd.blooddonorfinder.payload.request.LoginRequest;
+import com.bd.blooddonorfinder.payload.request.ResendOtpRequest;
 import com.bd.blooddonorfinder.payload.request.VerifyOtpRequest;
 import com.bd.blooddonorfinder.payload.response.TokenResponse;
 import com.bd.blooddonorfinder.security.CustomUserDetailsService;
@@ -23,6 +24,7 @@ import com.bd.blooddonorfinder.security.jwt.JwtTokenProvider;
 import com.bd.blooddonorfinder.service.OtpService;
 import com.bd.blooddonorfinder.service.UserService;
 import com.bd.blooddonorfinder.service.audit.AuditService;
+import com.bd.blooddonorfinder.service.otp.OtpIssuanceService;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +67,8 @@ class SondhanAuthServiceTest {
     @Mock
     private OtpService otpService;
     @Mock
+    private OtpIssuanceService otpIssuanceService;
+    @Mock
     private AuditService auditService;
     @Mock
     private JwtTokenProvider tokenProvider;
@@ -84,6 +88,7 @@ class SondhanAuthServiceTest {
                 passwordEncoder,
                 userDetailsService,
                 otpService,
+                otpIssuanceService,
                 auditService,
                 tokenProvider,
                 tokenStorageService,
@@ -289,6 +294,76 @@ class SondhanAuthServiceTest {
     }
 
     @Test
+    void resendOtp_shouldIssueNewOtpForRegistrationUser() {
+        User user = registrationUser();
+        ResendOtpRequest request = resendOtpRequest(user.getId(), "REGISTER");
+        when(userService.findById(user.getId())).thenReturn(user);
+        when(otpIssuanceService.issue(user, OtpPurpose.REGISTER)).thenReturn(180);
+
+        var response = authService.resendOtp(clientContext, request);
+
+        assertNotNull(response.getSuccess());
+        assertEquals(user.getId(), response.getSuccess().getData().userId());
+        assertEquals(180, response.getSuccess().getData().otpExpiresInSeconds());
+        verify(otpIssuanceService).issue(user, OtpPurpose.REGISTER);
+        verify(auditService).log(AuditEvent.OTP_SENT, user.getId(), IP, USER_AGENT,
+                "{\"purpose\":\"REGISTER\",\"resend\":true}");
+    }
+
+    @Test
+    void resendOtp_shouldRejectAlreadyVerifiedRegistration() {
+        User user = activeUser();
+        ResendOtpRequest request = resendOtpRequest(user.getId(), "REGISTER");
+        when(userService.findById(user.getId())).thenReturn(user);
+
+        AuthException exception = assertThrows(AuthException.class,
+                () -> authService.resendOtp(clientContext, request));
+
+        assertEquals(ErrorCode.ALREADY_VERIFIED, exception.getErrorCode());
+        verifyNoInteractions(otpIssuanceService);
+    }
+
+    @Test
+    void resendOtp_shouldRejectUnverifiedLogin() {
+        User user = registrationUser();
+        ResendOtpRequest request = resendOtpRequest(user.getId(), "LOGIN");
+        when(userService.findById(user.getId())).thenReturn(user);
+
+        AuthException exception = assertThrows(AuthException.class,
+                () -> authService.resendOtp(clientContext, request));
+
+        assertEquals(ErrorCode.USER_NOT_VERIFIED, exception.getErrorCode());
+        verifyNoInteractions(otpIssuanceService);
+    }
+
+    @Test
+    void resendOtp_shouldRejectUnsupportedPurpose() {
+        User user = registrationUser();
+        ResendOtpRequest request = resendOtpRequest(user.getId(), "PASSWORD_RESET");
+        when(userService.findById(user.getId())).thenReturn(user);
+
+        InvalidOtpPurposeException exception = assertThrows(InvalidOtpPurposeException.class,
+                () -> authService.resendOtp(clientContext, request));
+
+        assertEquals(ErrorCode.UNSUPPORTED_OTP_PURPOSE, exception.getErrorCode());
+        verifyNoInteractions(otpIssuanceService);
+    }
+
+    @Test
+    void resendOtp_shouldPropagateDeliveryFailure() {
+        User user = registrationUser();
+        ResendOtpRequest request = resendOtpRequest(user.getId(), "REGISTER");
+        when(userService.findById(user.getId())).thenReturn(user);
+        when(otpIssuanceService.issue(user, OtpPurpose.REGISTER))
+                .thenThrow(new AuthException(ErrorCode.OTP_SEND_FAILED, "delivery failed"));
+
+        AuthException exception = assertThrows(AuthException.class,
+                () -> authService.resendOtp(clientContext, request));
+
+        assertEquals(ErrorCode.OTP_SEND_FAILED, exception.getErrorCode());
+    }
+
+    @Test
     void refresh_shouldRotateWhitelistedRefreshToken() throws Exception {
         UUID userId = UUID.randomUUID();
         User user = activeUser();
@@ -320,6 +395,13 @@ class SondhanAuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setIdentifier(identifier);
         request.setPassword(RAW_PASSWORD);
+        return request;
+    }
+
+    private ResendOtpRequest resendOtpRequest(UUID userId, String purpose) {
+        ResendOtpRequest request = new ResendOtpRequest();
+        request.setUserId(userId);
+        request.setPurpose(purpose);
         return request;
     }
 

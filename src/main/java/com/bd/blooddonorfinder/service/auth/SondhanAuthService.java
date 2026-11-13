@@ -9,6 +9,7 @@ import com.bd.blooddonorfinder.model.enums.TokenType;
 import com.bd.blooddonorfinder.payload.enums.LoginIdentifierType;
 import com.bd.blooddonorfinder.payload.request.LoginRequest;
 import com.bd.blooddonorfinder.payload.request.RegisterRequest;
+import com.bd.blooddonorfinder.payload.request.ResendOtpRequest;
 import com.bd.blooddonorfinder.payload.request.VerifyOtpRequest;
 import com.bd.blooddonorfinder.payload.response.AuthResponse;
 import com.bd.blooddonorfinder.payload.response.OtpSentResponse;
@@ -22,6 +23,7 @@ import com.bd.blooddonorfinder.security.jwt.JwtTokenProvider;
 import com.bd.blooddonorfinder.service.OtpService;
 import com.bd.blooddonorfinder.service.UserService;
 import com.bd.blooddonorfinder.service.audit.AuditService;
+import com.bd.blooddonorfinder.service.otp.OtpIssuanceService;
 import com.bd.blooddonorfinder.utils.LoginIdentifierResolver;
 import com.bd.blooddonorfinder.utils.Utils;
 import com.bd.blooddonorfinder.utils.constants.TokenErrorReason;
@@ -49,6 +51,7 @@ public class SondhanAuthService implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService userDetailsService;
     private final OtpService otpService;
+    private final OtpIssuanceService otpIssuanceService;
     private final AuditService auditService;
     private final JwtTokenProvider tokenProvider;
     private final TokenStorageService tokenStorageService;
@@ -65,6 +68,7 @@ public class SondhanAuthService implements AuthService {
                               PasswordEncoder passwordEncoder,
                               CustomUserDetailsService userDetailsService,
                               OtpService otpService,
+                              OtpIssuanceService otpIssuanceService,
                               AuditService auditService,
                               JwtTokenProvider tokenProvider,
                               TokenStorageService tokenStorageService,
@@ -73,6 +77,7 @@ public class SondhanAuthService implements AuthService {
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
         this.otpService = otpService;
+        this.otpIssuanceService = otpIssuanceService;
         this.auditService = auditService;
         this.tokenProvider = tokenProvider;
         this.tokenStorageService = tokenStorageService;
@@ -334,6 +339,28 @@ public class SondhanAuthService implements AuthService {
             }
             throw e;
         }
+    }
+
+    @Override
+    @Transactional
+    public RestApiResponse<OtpSentResponse> resendOtp(SondhanClientContext clientContext,
+                                                      ResendOtpRequest request) {
+        OtpPurpose purpose = Utils.parseOtpPurpose(request.getPurpose());
+        User user = userService.findById(request.getUserId());
+        // Reuse the same purpose rules as verification so a resend cannot
+        // bypass lockout, verification state or unsupported-purpose checks.
+        validateOtpPurpose(user, purpose);
+
+        int ttl = otpIssuanceService.issue(user, purpose);
+        auditService.log(AuditEvent.OTP_SENT,
+                user.getId(),
+                clientContext.getIpAddress(),
+                clientContext.getUserAgent(),
+                "{\"purpose\":\"" + purpose + "\",\"resend\":true}");
+        log.info("OTP resent to userId={}, purpose={}", user.getId(), purpose);
+
+        return Utils.buildSuccessRestResponse(HttpStatus.OK,
+                new OtpSentResponse(user.getId(), "OTP sent", ttl));
     }
 
     private String normalizeIdentifier(String identifier) {

@@ -3,6 +3,7 @@ package com.bd.blooddonorfinder.controller.auth;
 import com.bd.blooddonorfinder.payload.request.LoginRequest;
 import com.bd.blooddonorfinder.payload.request.RefreshTokenRequest;
 import com.bd.blooddonorfinder.payload.request.RegisterRequest;
+import com.bd.blooddonorfinder.payload.request.ResendOtpRequest;
 import com.bd.blooddonorfinder.payload.request.VerifyOtpRequest;
 import com.bd.blooddonorfinder.payload.response.AuthResponse;
 import com.bd.blooddonorfinder.payload.response.OtpSentResponse;
@@ -31,7 +32,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Authentication", description = "Login, register, token refresh, and logout")
+@Tag(name = "Authentication", description = "Login, register, OTP, token refresh, and logout")
 @Slf4j
 public class AuthController {
 
@@ -136,6 +137,19 @@ public class AuthController {
                 verifyOtpRequest.getUserId(), verifyOtpRequest.getPurpose());
         SondhanClientContext clientContext = Utils.buildClientContext(httpServletRequest);
         RestApiResponse<AuthResponse> response = authService.verifyOtp(clientContext, verifyOtpRequest);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PostMapping("/resend-otp")
+    @Operation(summary = "Resend OTP", description = "Generate and send a new OTP for registration or login")
+    public ResponseEntity<RestApiResponse<OtpSentResponse>> resendOtp(
+            @Valid @RequestBody ResendOtpRequest resendOtpRequest,
+            HttpServletRequest httpServletRequest) {
+
+        log.debug("Resending otp for userId: {}, purpose: {}",
+                resendOtpRequest.getUserId(), resendOtpRequest.getPurpose());
+        SondhanClientContext clientContext = Utils.buildClientContext(httpServletRequest);
+        RestApiResponse<OtpSentResponse> response = authService.resendOtp(clientContext, resendOtpRequest);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }
