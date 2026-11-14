@@ -17,8 +17,8 @@ import java.util.UUID;
 public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
     private UUID userId;
     private String username;
-    private String email;
-    private String phone;
+    private String emailTokenId;
+    private String phoneTokenId;
     private String role;
     private String bloodGroup;
     private String address;
@@ -42,9 +42,9 @@ public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
     public static UserRegisteredEvent from(User user) {
         UserRegisteredEvent event = new UserRegisteredEvent();
         event.setUserId(user.getId());
-        event.setUsername(user.getFirstName());
-        /*event.setEmail(user.getEmailToken());
-        event.setPhone(user.getPhone());*/
+        event.setUsername(user.getFirstName() + " "+ user.getLastName());
+        event.setEmailTokenId(user.getEmailToken().getId().toString());
+        event.setPhoneTokenId(user.getPhoneToken().getId().toString());
         //event.setRole(user.getRole().name()!= null ? user.getRole().name() : "reg_user");
         event.setBloodGroup(user.getBloodGroup().name());
         event.setIsVerified(user.getIsVerified());

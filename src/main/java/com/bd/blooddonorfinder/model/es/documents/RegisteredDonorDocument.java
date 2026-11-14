@@ -25,10 +25,10 @@ public class RegisteredDonorDocument {
     private String username;
 
     @Field(type = FieldType.Keyword)
-    private String email;
+    private String emailTokenId;
 
     @Field(type = FieldType.Keyword)
-    private String phoneNumber;
+    private String phoneTokenId;
 
     @Field(type = FieldType.Keyword)
     private List<String> roles;
@@ -79,8 +79,8 @@ public class RegisteredDonorDocument {
         RegisteredDonorDocument doc =  RegisteredDonorDocument.builder()
                 .id(event.getUserId().toString())
                 .username(event.getUsername())
-                .email(event.getEmail())
-                .phoneNumber(event.getPhone())
+                .emailTokenId(event.getEmailTokenId())
+                .phoneTokenId(event.getPhoneTokenId())
                 .bloodGroup(event.getBloodGroup())
                 .city(event.getCity())
                 .district(event.getDistrict())
