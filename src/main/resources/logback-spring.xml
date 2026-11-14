@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <property name="LOG_DIR" value="logs"/>
+    <!--
+      LOG_DIR can be overridden with a system property or environment variable
+      (the container image sets -DLOG_DIR=/var/log/sondhan). Keeping the
+      fallback here preserves the local `logs/` directory for host runs.
+    -->
     <property name="APP_NAME" value="blood-donor-finder"/>
 
     <appender name="CONSOLE"
@@ -23,11 +27,11 @@
 
     <appender name="APP_FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_DIR}/application.log</file>
+        <file>${LOG_DIR:-logs}/application.log</file>
         <rollingPolicy
                 class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>
-                ${LOG_DIR}/archive/application.%d{yyyy-MM-dd}.%i.log.gz
+                ${LOG_DIR:-logs}/archive/application.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory>
@@ -50,7 +54,7 @@
     <appender name="ERROR_FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
 
-        <file>${LOG_DIR}/error.log</file>
+        <file>${LOG_DIR:-logs}/error.log</file>
 
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
@@ -60,7 +64,7 @@
                 class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
 
             <fileNamePattern>
-                ${LOG_DIR}/archive/error.%d{yyyy-MM-dd}.%i.log.gz
+                ${LOG_DIR:-logs}/archive/error.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
 
             <maxFileSize>50MB</maxFileSize>
@@ -87,13 +91,13 @@
     <appender name="KAFKA_FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
 
-        <file>${LOG_DIR}/kafka.log</file>
+        <file>${LOG_DIR:-logs}/kafka.log</file>
 
         <rollingPolicy
                 class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
 
             <fileNamePattern>
-                ${LOG_DIR}/archive/kafka.%d{yyyy-MM-dd}.%i.log.gz
+                ${LOG_DIR:-logs}/archive/kafka.%d{yyyy-MM-dd}.%i.log.gz
             </fileNamePattern>
 
             <maxFileSize>50MB</maxFileSize>

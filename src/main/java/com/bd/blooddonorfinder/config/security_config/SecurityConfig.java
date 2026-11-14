@@ -38,7 +38,9 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/actuator/health",
+            // Includes /actuator/health/liveness and /readiness used by
+            // container health checks and orchestrators.
+            "/actuator/health/**",
             "/error"
     };
 
