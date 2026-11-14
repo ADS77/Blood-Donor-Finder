@@ -1,57 +1,399 @@
+# ---------------------------------------------------------------------------
+# Local / development stack.
+#
+# Start everything:
+#   docker compose -f Docker/docker-compose.yml --env-file .env up -d --build
+#
+# Start infrastructure only (run the application from the IDE):
+#   docker compose -f Docker/docker-compose.yml --env-file .env up -d \
+#     postgres kafka elasticsearch redis-cluster-init
+#
+# Production uses Docker/docker-compose.prod.yml instead. See
+# docs/container-deployment.md for the operating model and runbooks.
+# ---------------------------------------------------------------------------
+name: sondhan
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  init: true
+  logging: *default-logging
+  networks:
+    - sondhan
+
+# ---------------------------------------------------------------------------
+# Shared definition for the six Redis cluster nodes below. This lives at the
+# top level so Compose does not treat the anchor itself as a service.
+# ---------------------------------------------------------------------------
+x-redis-node: &redis-node
+  <<: *service-defaults
+  image: redis:7.4-alpine
+  mem_limit: 256m
+  cpus: 0.5
+  stop_grace_period: 10s
+  healthcheck:
+    test: ["CMD-SHELL", "redis-cli -p 6379 ping | grep -q PONG"]
+    interval: 5s
+    timeout: 3s
+    retries: 20
+
 services:
   app:
+    <<: *service-defaults
+    # The image already uses tini as PID 1; do not wrap it twice.
+    init: false
     build:
       context: ..
       dockerfile: Dockerfile
+      args:
+        APP_UID: ${APP_UID:-10001}
+        APP_GID: ${APP_GID:-10001}
+    image: sondhan-app:local
     container_name: sondhan-app
     env_file:
       - ../.env
+    environment:
+      # Container-internal addresses override the host-oriented values in .env.
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-bd_db}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: "9200"
+      ELASTICSEARCH_SCHEME: http
+      REDIS_CLUSTER_NODES: redis-1:6379,redis-3:6379,redis-5:6379
+      SPRINGDOC_ENABLED: ${SPRINGDOC_ENABLED:-true}
     ports:
       - "8088:8088"
     depends_on:
-      - postgres
-      - kafka
-      - elasticsearch
-
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      redis-cluster-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8088/sondhan/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    stop_grace_period: 45s
+    mem_limit: 1g
+    cpus: 1.0
 
   zookeeper:
+    <<: *service-defaults
     image: confluentinc/cp-zookeeper:7.5.0
     hostname: zookeeper
     container_name: zookeeper
-    restart: always
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/2181'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    stop_grace_period: 30s
+    mem_limit: 512m
+    cpus: 0.5
 
   kafka:
+    <<: *service-defaults
     image: confluentinc/cp-kafka:7.5.0
     hostname: kafka
     container_name: kafka
-    restart: always
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
-
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
-
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
-
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    stop_grace_period: 60s
+    mem_limit: 1g
+    cpus: 1.0
 
+  postgres:
+    <<: *service-defaults
+    image: postgres:15
+    container_name: postgres-bd_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-bd_db}
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME must be set}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    shm_size: 256mb
+    stop_grace_period: 60s
+    mem_limit: 512m
+    cpus: 1.0
+
+  elasticsearch:
+    <<: *service-defaults
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      bootstrap.memory_lock: "true"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    stop_grace_period: 60s
+    mem_limit: 1g
+    cpus: 1.0
+
+  # -------------------------------------------------------------------------
+  # Three-master / three-replica Redis cluster used by the application.
+  # Each node advertises its Compose service name so the cluster remains
+  # reachable from the app container (the host-based cluster from
+  # setup-redis-cluster.sh advertises 127.0.0.1 and only works for a host-run
+  # application).
+  # -------------------------------------------------------------------------
+  redis-1:
+    <<: *redis-node
+    container_name: sondhan-redis-1
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-1
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-1-data:/data
+
+  redis-2:
+    <<: *redis-node
+    container_name: sondhan-redis-2
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-2
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-2-data:/data
+
+  redis-3:
+    <<: *redis-node
+    container_name: sondhan-redis-3
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-3
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-3-data:/data
+
+  redis-4:
+    <<: *redis-node
+    container_name: sondhan-redis-4
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-4
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-4-data:/data
+
+  redis-5:
+    <<: *redis-node
+    container_name: sondhan-redis-5
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-5
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-5-data:/data
+
+  redis-6:
+    <<: *redis-node
+    container_name: sondhan-redis-6
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-6
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-6-data:/data
+
+  redis-cluster-init:
+    <<: *service-defaults
+    image: redis:7.4-alpine
+    container_name: sondhan-redis-cluster-init
+    restart: "no"
+    mem_limit: 128m
+    depends_on:
+      redis-1:
+        condition: service_healthy
+      redis-2:
+        condition: service_healthy
+      redis-3:
+        condition: service_healthy
+      redis-4:
+        condition: service_healthy
+      redis-5:
+        condition: service_healthy
+      redis-6:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        redis-cli -h redis-1 -p 6379 cluster info 2>/dev/null | grep -q 'cluster_state:ok'
+        || redis-cli --cluster create
+        redis-1:6379 redis-2:6379 redis-3:6379 redis-4:6379 redis-5:6379 redis-6:6379
+        --cluster-replicas 1 --cluster-yes
+
+  # -------------------------------------------------------------------------
+  # Optional developer tools. Start with:
+  #   --profile kafka-ui --profile observability
+  # -------------------------------------------------------------------------
   akhq:
-    image: tchiotludo/akhq
+    <<: *service-defaults
+    profiles: ["kafka-ui"]
+    image: tchiotludo/akhq:0.28.0
     container_name: akhq
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
@@ -61,63 +403,63 @@ services:
             local:
               properties:
                 bootstrap.servers: kafka:29092
-
-  postgres:
-    image: postgres:15
-    container_name: postgres-bd_db
-    restart: always
-    environment:
-      POSTGRES_DB: bd_db
-      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME must be set}
-      # Use the same credentials as the application (.env / DB_* variables).
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    volumes:
-      - es-data:/usr/share/elasticsearch/data
-    networks:
-      - elk
+    mem_limit: 512m
 
   kibana:
+    <<: *service-defaults
+    profiles: ["observability"]
     image: docker.elastic.co/kibana/kibana:8.11.0
     container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     ports:
       - "5601:5601"
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    networks:
-      - elk
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5601/api/status >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    mem_limit: 768m
 
   logstash:
+    <<: *service-defaults
+    profiles: ["observability"]
     image: docker.elastic.co/logstash/logstash:8.11.0
     container_name: logstash
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     ports:
       - "5000:5000"
     volumes:
-      - /data/pet-projects/sondhan/service/Blood-Donor-Finder/Docker/logstash-pipeline:/usr/share/logstash/pipeline
+      - ./logstash-pipeline:/usr/share/logstash/pipeline:ro
     environment:
-      - LS_JAVA_OPTS=-Xms256m -Xmx256m
-    networks:
-      - elk
-
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9600'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+    mem_limit: 768m
 
 networks:
-  elk:
+  sondhan:
     driver: bridge
 
 volumes:
   postgres-data:
   es-data:
+  kafka-data:
+  zookeeper-data:
+  zookeeper-log:
+  redis-1-data:
+  redis-2-data:
+  redis-3-data:
+  redis-4-data:
+  redis-5-data:
+  redis-6-data:
