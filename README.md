@@ -23,7 +23,7 @@ cp .env.example .env
 
 Then set at least:
 
-- `DB_PASSWORD` — password for the local PostgreSQL `bduser`. The Docker stack
+- `DB_PASSWORD` — password for the local PostgreSQL. The Docker stack
   in `Docker/docker-compose.yml` uses the same `DB_USERNAME` and `DB_PASSWORD`
   values from `.env`, so no separate Postgres password needs to be exported.
 - `PII_ENCRYPTION_KEY`, `PII_HASH_KEY`, `OTP_HASH_KEY` — generate strong random
@@ -111,6 +111,6 @@ Once the application is running, you can explore and test all available endpoint
 
 🔗 **Access Swagger UI**:
 --
-http://localhost:8080/swagger-ui/index.html
+http://localhost:8088/sondhan/swagger-ui/index.html
 ### Clone the repo 
 git clone https://github.com/ADS77/Blood-Donor-Finder
