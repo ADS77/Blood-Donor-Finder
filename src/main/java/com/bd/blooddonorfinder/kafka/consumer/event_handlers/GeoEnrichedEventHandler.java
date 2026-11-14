@@ -9,6 +9,7 @@ import com.bd.blooddonorfinder.service.es.ElasticSearchIndexService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
@@ -35,6 +36,17 @@ public class GeoEnrichedEventHandler extends AbstractSyncHandler<UserGeoEnriched
     @Override
     public Class<UserGeoEnrichedEvent> eventClass() {
         return UserGeoEnrichedEvent.class;
+    }
+
+    /**
+     * Opens a transaction around the handler so the {@code @Modifying} geo
+     * update can execute. The idempotency marker is written in its own
+     * transaction by {@code JpaProcessedEventStore} and compensated on failure.
+     */
+    @Override
+    @Transactional
+    public void handle(UserGeoEnrichedEvent event) {
+        super.handle(event);
     }
 
     @Override
