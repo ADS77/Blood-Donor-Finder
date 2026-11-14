@@ -1,0 +1,411 @@
+# ---------------------------------------------------------------------------
+# Production deployment (single VM / Docker Engine with Compose).
+#
+# Recommended mode - application only, infrastructure is managed externally
+# (managed PostgreSQL, Kafka, Redis, Elasticsearch):
+#
+#   cp Docker/prod.env.example Docker/prod.env
+#   # create the files described in Docker/secrets/README.md
+#   docker compose --env-file Docker/prod.env \
+#     -f Docker/docker-compose.prod.yml up -d
+#
+# Self-hosted mode - also run PostgreSQL, Kafka, Elasticsearch and Redis on the
+# same VM. This is a single-node, non-HA compromise and is not a substitute for
+# a managed platform:
+#
+#   docker compose --env-file Docker/prod.env \
+#     -f Docker/docker-compose.prod.yml --profile self-hosted-infra up -d
+#
+# The application port is bound to loopback on purpose. Put a TLS-terminating
+# reverse proxy (nginx, Caddy, Traefik, cloud load balancer) in front of it.
+# See docs/container-deployment.md for the full operating model.
+# ---------------------------------------------------------------------------
+name: sondhan-prod
+
+x-logging: &prod-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+x-service-defaults: &service-defaults
+  restart: always
+  logging: *prod-logging
+  networks:
+    - sondhan
+
+services:
+  app:
+    <<: *service-defaults
+    # The runtime image already uses tini as PID 1.
+    init: false
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ${APP_IMAGE:-sondhan-app}:${APP_TAG:-latest}
+    container_name: sondhan-app
+    env_file:
+      - ./prod.env
+    environment:
+      # Replaces the optional .env import in application.properties. Every file
+      # placed in the config tree becomes a property, e.g. /run/secrets/DB_PASSWORD
+      # resolves ${DB_PASSWORD}.
+      SPRING_CONFIG_IMPORT: optional:configtree:/run/secrets/
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # These paths point at files mounted from Docker/secrets.
+      RSA_PRIVATE_KEY_PATH: ${RSA_PRIVATE_KEY_PATH:-/run/secrets/rsa_private.pem}
+      RSA_PUBLIC_KEY_PATH: ${RSA_PUBLIC_KEY_PATH:-/run/secrets/rsa_public.pem}
+    secrets:
+      - DB_PASSWORD
+      - MAIL_PASSWORD
+      - PII_ENCRYPTION_KEY
+      - PII_HASH_KEY
+      - OTP_HASH_KEY
+      - EMAIL_PAYLOAD_KEY
+      - rsa_private.pem
+      - rsa_public.pem
+    ports:
+      # Loopback only; expose through a reverse proxy or load balancer.
+      - "127.0.0.1:${APP_PORT:-8088}:8088"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8088/sondhan/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    stop_grace_period: 45s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    volumes:
+      - app-logs:/var/log/sondhan
+    mem_limit: ${APP_MEM_LIMIT:-1g}
+    cpus: ${APP_CPUS:-2.0}
+
+  # -------------------------------------------------------------------------
+  # Optional self-hosted infrastructure. Enable with
+  #   --profile self-hosted-infra
+  # None of these services publish a host port. Only the application can reach
+  # them, over the private Compose network.
+  # -------------------------------------------------------------------------
+  postgres:
+    <<: *service-defaults
+    profiles: ["self-hosted-infra"]
+    image: postgres:15-alpine
+    container_name: sondhan-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-bd_db}
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME must be set in prod.env}
+      POSTGRES_PASSWORD_FILE: /run/secrets/DB_PASSWORD
+    secrets:
+      - DB_PASSWORD
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    shm_size: 256mb
+    stop_grace_period: 60s
+    mem_limit: ${POSTGRES_MEM_LIMIT:-1g}
+    cpus: 1.0
+
+  kafka:
+    <<: *service-defaults
+    profiles: ["self-hosted-infra"]
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka
+    container_name: sondhan-kafka
+    environment:
+      # Single-node KRaft broker; no ZooKeeper.
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    stop_grace_period: 60s
+    mem_limit: ${KAFKA_MEM_LIMIT:-1g}
+    cpus: 1.0
+
+  elasticsearch:
+    <<: *service-defaults
+    profiles: ["self-hosted-infra"]
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: sondhan-elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      bootstrap.memory_lock: "true"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=1s' >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 40s
+    stop_grace_period: 60s
+    mem_limit: ${ES_MEM_LIMIT:-2g}
+    cpus: 2.0
+
+  # -------------------------------------------------------------------------
+  # Six-node Redis cluster (three masters, three replicas). Each node
+  # advertises its Compose service name so cluster redirections stay valid
+  # inside the Compose network.
+  # -------------------------------------------------------------------------
+  x-redis-node: &redis-node
+    <<: *service-defaults
+    profiles: ["self-hosted-infra"]
+    image: redis:7.4-alpine
+    mem_limit: ${REDIS_NODE_MEM_LIMIT:-512m}
+    cpus: 0.5
+    stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -p 6379 ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis-1:
+    <<: *redis-node
+    container_name: sondhan-prod-redis-1
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-1
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-1-data:/data
+
+  redis-2:
+    <<: *redis-node
+    container_name: sondhan-prod-redis-2
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-2
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-2-data:/data
+
+  redis-3:
+    <<: *redis-node
+    container_name: sondhan-prod-redis-3
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-3
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-3-data:/data
+
+  redis-4:
+    <<: *redis-node
+    container_name: sondhan-prod-redis-4
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-4
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-4-data:/data
+
+  redis-5:
+    <<: *redis-node
+    container_name: sondhan-prod-redis-5
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-5
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-5-data:/data
+
+  redis-6:
+    <<: *redis-node
+    container_name: sondhan-prod-redis-6
+    command:
+      - redis-server
+      - --port
+      - "6379"
+      - --cluster-enabled
+      - "yes"
+      - --cluster-config-file
+      - /data/nodes.conf
+      - --cluster-node-timeout
+      - "5000"
+      - --appendonly
+      - "yes"
+      - --cluster-announce-hostname
+      - redis-6
+      - --cluster-announce-port
+      - "6379"
+      - --cluster-announce-bus-port
+      - "16379"
+      - --cluster-preferred-endpoint-type
+      - hostname
+    volumes:
+      - redis-6-data:/data
+
+  redis-cluster-init:
+    <<: *service-defaults
+    profiles: ["self-hosted-infra"]
+    image: redis:7.4-alpine
+    container_name: sondhan-prod-redis-cluster-init
+    restart: "no"
+    mem_limit: 128m
+    depends_on:
+      redis-1:
+        condition: service_healthy
+      redis-2:
+        condition: service_healthy
+      redis-3:
+        condition: service_healthy
+      redis-4:
+        condition: service_healthy
+      redis-5:
+        condition: service_healthy
+      redis-6:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        redis-cli -h redis-1 -p 6379 cluster info 2>/dev/null | grep -q 'cluster_state:ok'
+        || redis-cli --cluster create
+        redis-1:6379 redis-2:6379 redis-3:6379 redis-4:6379 redis-5:6379 redis-6:6379
+        --cluster-replicas 1 --cluster-yes
+
+networks:
+  sondhan:
+    driver: bridge
+
+volumes:
+  app-logs:
+  postgres-data:
+  kafka-data:
+  es-data:
+  redis-1-data:
+  redis-2-data:
+  redis-3-data:
+  redis-4-data:
+  redis-5-data:
+  redis-6-data:
+
+secrets:
+  DB_PASSWORD:
+    file: ./secrets/db_password
+  MAIL_PASSWORD:
+    file: ./secrets/mail_password
+  PII_ENCRYPTION_KEY:
+    file: ./secrets/pii_encryption_key
+  PII_HASH_KEY:
+    file: ./secrets/pii_hash_key
+  OTP_HASH_KEY:
+    file: ./secrets/otp_hash_key
+  EMAIL_PAYLOAD_KEY:
+    file: ./secrets/email_payload_key
+  rsa_private.pem:
+    file: ./secrets/rsa_private.pem
+  rsa_public.pem:
+    file: ./secrets/rsa_public.pem

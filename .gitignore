@@ -50,3 +50,8 @@ rsakeys/
 *.key
 *.p12
 *.jks
+
+### Docker Compose production env (secrets live in Docker/secrets/) ###
+Docker/prod.env
+# `*.yml` above is an IDE rule; Compose files are project source.
+!Docker/docker-compose*.yml
