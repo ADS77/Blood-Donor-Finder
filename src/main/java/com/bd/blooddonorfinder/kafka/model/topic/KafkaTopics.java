@@ -1,8 +1,10 @@
 package com.bd.blooddonorfinder.kafka.model.topic;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
+import com.bd.blooddonorfinder.kafka.model.events.ChatMessageSentEvent;
 import com.bd.blooddonorfinder.kafka.model.events.EmailNotificationEvent;
 import com.bd.blooddonorfinder.kafka.model.events.UserGeoEnrichedEvent;
+import com.bd.blooddonorfinder.kafka.model.events.UserLocationUpdatedEvent;
 import com.bd.blooddonorfinder.kafka.model.events.UserRegisteredEvent;
 import com.bd.blooddonorfinder.kafka.model.events.UserUpdateEvent;
 
@@ -13,6 +15,8 @@ public enum KafkaTopics {
     USER_REGISTERED("user.registered", UserRegisteredEvent.class),
     USER_UPDATE("user.updated", UserUpdateEvent.class),
     USER_GEO_ENRICHED("user.geo.enriched", UserGeoEnrichedEvent.class),
+    USER_LOCATION_UPDATED("user.location.updated", UserLocationUpdatedEvent.class),
+    CHAT_MESSAGE_SENT("chat.message.sent", ChatMessageSentEvent.class),
     EMAIL_NOTIFICATION("email.notification", EmailNotificationEvent.class);
 
     private final String topicName;

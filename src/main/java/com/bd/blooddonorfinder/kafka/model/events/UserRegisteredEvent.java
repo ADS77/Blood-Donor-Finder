@@ -35,6 +35,8 @@ public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
     private Double rating;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    /** Epoch-millis when the coordinates were last confirmed; null for legacy events. */
+    private Long geoUpdatedAt;
     public UserRegisteredEvent(){
         super(KafkaTopics.USER_REGISTERED,"UserRegisteredEvent");
     }
@@ -69,6 +71,9 @@ public class UserRegisteredEvent extends BaseEvent implements IndexAbleEvent {
             }
             if(user.getGeoLocation().getZipcode() !=null){
                 event.setZipcode(user.getGeoLocation().getZipcode());
+            }
+            if(user.getGeoLocation().getGeoUpdatedAt() != null){
+                event.setGeoUpdatedAt(user.getGeoLocation().getGeoUpdatedAt().toEpochMilli());
             }
         }
         event.setAggregateId(String.valueOf(user.getId()));
