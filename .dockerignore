@@ -1,7 +1,15 @@
 .git
+.gitignore
+.gitattributes
 .idea
 .vscode
+*.iml
 target/
 Docker/
+docs/
+logs/
 .env
+.env.*
 *.log
+README.md
+SECURITY.md
