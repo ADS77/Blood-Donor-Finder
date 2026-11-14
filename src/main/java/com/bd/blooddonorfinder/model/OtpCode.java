@@ -26,6 +26,9 @@ public class OtpCode {
     @Column(name = "code_hash", nullable = false, length = 64, columnDefinition = "CHAR(64)")
     private String codeHash;
 
+    @Column(name = "salt", updatable = false, length = 64)
+    private String salt;
+
     @Column(name = "expires_at", nullable = false, updatable = false)
     private Instant expiresAt;
 
@@ -50,8 +53,17 @@ public class OtpCode {
         this.createdAt = Instant.now();
     }
 
+    public OtpCode(User user, String codeHash, String salt, OtpPurpose purpose, Instant expiresAt) {
+        this(user, codeHash, purpose, expiresAt);
+        this.salt = salt;
+    }
+
     public static OtpCode of(User user, String otpHash,OtpPurpose purpose, Instant expiresAt) {
         return new OtpCode(user,otpHash,purpose,expiresAt);
+    }
+
+    public static OtpCode of(User user, String otpHash, String salt, OtpPurpose purpose, Instant expiresAt) {
+        return new OtpCode(user, otpHash, salt, purpose, expiresAt);
     }
 
     public boolean isExpired() {
@@ -76,6 +88,10 @@ public class OtpCode {
 
     public String getCodeHash() {
         return codeHash;
+    }
+
+    public String getSalt() {
+        return salt;
     }
 
     public OtpPurpose getPurpose() {

@@ -90,6 +90,10 @@ public class User {
     @Column(columnDefinition = "BIGINT DEFAULT 0")
     private Long totalDonations = 0L;
 
+    /** Number of ratings received — keeps the running average exact. */
+    @Column(name = "rating_count", columnDefinition = "BIGINT DEFAULT 0")
+    private Long ratingCount = 0L;
+
     @Column(name = "image_url")
     private String imageUrl;
 

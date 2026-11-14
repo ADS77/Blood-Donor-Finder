@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.payload.request;
 
 import com.bd.blooddonorfinder.model.common.GeoLocation;
 import com.bd.blooddonorfinder.model.enums.BloodGroup;
+import com.bd.blooddonorfinder.model.enums.RequestUrgency;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -34,4 +35,7 @@ public class BloodRequestDto implements Serializable {
 
     @Size(max = 1000, message = "Message must not exceed 1000 characters")
     private String message;
+
+    /** Optional: ROUTINE (default), URGENT, CRITICAL. */
+    private RequestUrgency urgency;
 }

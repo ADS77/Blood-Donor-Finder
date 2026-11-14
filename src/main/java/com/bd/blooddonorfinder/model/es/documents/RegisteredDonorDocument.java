@@ -72,6 +72,10 @@ public class RegisteredDonorDocument {
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
     private LocalDateTime updatedAt;
 
+    /** Epoch-millis when the donor's coordinates were last confirmed by the donor. */
+    @Field(type = FieldType.Long)
+    private Long geoUpdatedAt;
+
     @Field(type = FieldType.Long)
     private Long version;
 
@@ -92,6 +96,7 @@ public class RegisteredDonorDocument {
                 .totalDonations(event.getTotalDonations())
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
+                .geoUpdatedAt(event.getGeoUpdatedAt())
                 .version(event.getVersion())
                 .build();
         if(event.getLatitude() != null && event.getLongitude() != null){

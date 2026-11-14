@@ -44,6 +44,14 @@ public class GeoLocation implements Serializable {
     @Enumerated(EnumType.STRING)
     private GeoStatus geoStatus = GeoStatus.PENDING;
 
+    /** When the coordinates were last confirmed by the donor (device update / enrichment). */
+    @Column(name = "geo_updated_at")
+    private Instant geoUpdatedAt;
+
+    /** When the staleness worker last emailed a location-reconfirmation request. */
+    @Column(name = "geo_reconfirm_requested_at")
+    private Instant geoReconfirmRequestedAt;
+
     @Column(name = "geo_retry_count")
     private int geoRetryCount = 0;
 

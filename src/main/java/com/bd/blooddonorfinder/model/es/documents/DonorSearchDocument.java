@@ -71,6 +71,10 @@ public class DonorSearchDocument implements Serializable {
     @Field(type = FieldType.Keyword)
     private String updatedAt;
 
+    /** Epoch-millis when the donor's coordinates were last confirmed — used by the staleness filter. */
+    @Field(type = FieldType.Long)
+    private Long geoUpdatedAt;
+
     public static DonorSearchDocument from(User user){
         if(user == null) return null;
         DonorSearchDocument doc = DonorSearchDocument.builder()

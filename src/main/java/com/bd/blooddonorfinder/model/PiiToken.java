@@ -47,10 +47,12 @@ public class PiiToken {
         return piiType;
     }
 
+    @JsonIgnore
     public String getValueHash() {
         return valueHash;
     }
 
+    @JsonIgnore
     public byte[] getEncryptedValue() {
         return encryptedValue;
     }
