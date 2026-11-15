@@ -1,14 +1,19 @@
 package com.bd.blooddonorfinder.security.exception;
 
-
 import com.bd.blooddonorfinder.utils.constants.TokenErrorReason;
+import org.springframework.security.core.AuthenticationException;
 
-import javax.security.sasl.AuthenticationException;
-
+/**
+ * Unchecked authentication failure raised while validating a JWT. Extending
+ * Spring's {@link AuthenticationException} lets it flow through the security
+ * filter chain and STOMP interceptors without checked-exception plumbing.
+ */
 public class InvalidJwtTokenException extends AuthenticationException {
+
     private final TokenErrorReason reason;
-    public InvalidJwtTokenException(String msg,  TokenErrorReason reason) {
-        super(msg);
+
+    public InvalidJwtTokenException(String message, TokenErrorReason reason) {
+        super(message);
         this.reason = reason;
     }
 
@@ -17,8 +22,7 @@ public class InvalidJwtTokenException extends AuthenticationException {
         this.reason = reason;
     }
 
-    public TokenErrorReason getReason(){
+    public TokenErrorReason getReason() {
         return reason;
     }
 }
-

@@ -3,6 +3,7 @@ package com.bd.blooddonorfinder.security.jwt;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -62,15 +63,36 @@ public class RsaKeyProvider {
 
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             this.privateKey = keyFactory.generatePrivate(
-                    new PKCS8EncodedKeySpec(Files.readAllBytes(Path.of(privateKeyPath))));
+                    new PKCS8EncodedKeySpec(readKeyBytes(privateKeyPath, "private")));
             this.publicKey = keyFactory.generatePublic(
-                    new X509EncodedKeySpec(Files.readAllBytes(Path.of(publicKeyPath))));
+                    new X509EncodedKeySpec(readKeyBytes(publicKeyPath, "public")));
 
             validateKeyPair();
             log.info("RSA key pair loaded successfully (algorithm={}, bits={})",
                     privateKey.getAlgorithm(), ((RSAPrivateKey) privateKey).getModulus().bitLength());
         } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | IllegalArgumentException e) {
             throw new IllegalStateException("Failed to load RSA keys - server cannot start", e);
+        }
+    }
+
+    /**
+     * Reads a key from the filesystem first (the mounted-secret path used in
+     * production) and falls back to the classpath for local development. The
+     * stream-based classpath read also works when running from a boot jar.
+     */
+    private byte[] readKeyBytes(String location, String label) throws IOException {
+        Path filesystemPath = Path.of(location);
+        if (Files.exists(filesystemPath)) {
+            log.info("Loading {} key from filesystem", label);
+            return Files.readAllBytes(filesystemPath);
+        }
+        ClassPathResource classpathResource = new ClassPathResource(location);
+        if (!classpathResource.exists()) {
+            throw new IOException("Key not found on filesystem or classpath: " + location);
+        }
+        try (var in = classpathResource.getInputStream()) {
+            log.info("Loading {} key from classpath (use a mounted secret in production)", label);
+            return in.readAllBytes();
         }
     }
 

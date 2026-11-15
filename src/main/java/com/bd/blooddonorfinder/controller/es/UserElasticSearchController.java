@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/es/users")
 @Slf4j
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ORG_ADMIN')")
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN','ORG_ADMIN')")
 public class UserElasticSearchController {
 
     private final UserElasticSearchService userElasticSearchService;
@@ -31,6 +31,11 @@ public class UserElasticSearchController {
         this.userElasticSearchService = service;
     }
 
+    /**
+     * ADMIN-ONLY write endpoint: syncs a user document into Elasticsearch.
+     * Normal writes flow through the event pipeline; this is a repair/sync tool.
+     */
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN')")
     @PostMapping("/save")
     public ResponseEntity<ListResponse<DonorSearchDocument>> saveAllUser(
             @Valid @RequestBody DonorSearchDocument user) {

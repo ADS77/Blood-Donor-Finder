@@ -11,9 +11,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Direct mail sending — an arbitrary-email primitive. Locked to system
+ * admins; all product email flows through the notification digest instead.
+ */
 @RestController
 @RequestMapping("/api/mail")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ORG_ADMIN')")
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN')")
 public class MailController {
     private final MailService mailService;
     private final String serverFromAddress;

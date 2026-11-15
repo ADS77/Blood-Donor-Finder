@@ -83,9 +83,12 @@ public class OtpService {
         enforceRateLimit(email);
         otpCodeRepository.invalidatePreviousOtps(user, purpose, Instant.now());
         String plainOtp = generateOtp();
-        String otpHash = hashOtp(user, purpose, plainOtp);
+        // Per-OTP random salt layered over the server-side HMAC key: a leaked
+        // code_hash column cannot be brute-forced offline without the key.
+        String salt = generateSalt();
+        String otpHash = hashOtp(user, purpose, plainOtp, salt);
         Instant expiresAt = Instant.now().plusSeconds(OTP_TTL_SECONDS);
-        otpCodeRepository.save(OtpCode.of(user,otpHash,purpose,expiresAt));
+        otpCodeRepository.save(OtpCode.of(user, otpHash, salt, purpose, expiresAt));
         String redisOtpKey = PREFIX_OTP_STATE + user.getId() + ":"+purpose.name();
         redisTemplate.opsForValue().set(redisOtpKey, 1, OTP_TTL_SECONDS, TimeUnit.SECONDS);
         return new GeneratedOtp(plainOtp, OTP_TTL_SECONDS);
@@ -97,7 +100,10 @@ public class OtpService {
                 .findActiveOtp(user,purpose,Instant.now())
                 .orElseThrow(() -> noActiveOtpException(user, purpose));
         log.debug("Found active otp code for {}, usedId: {}", purpose, user.getId());
-        String submittedHash = hashOtp(user, purpose, rawOtp);
+        // Salted rows are current; null salt is a legacy row created before V33.
+        String submittedHash = otpCode.getSalt() != null
+                ? hashOtp(user, purpose, rawOtp, otpCode.getSalt())
+                : hashOtp(user, purpose, rawOtp);
         if(!submittedHash.equals(otpCode.getCodeHash())){
             handleFailedAttempt(user);
             throw new InvalidOtpException(ErrorCode.INVALID_OTP, "OTP is incorrect");
@@ -136,8 +142,25 @@ public class OtpService {
     }
 
     private String hashOtp(User user, OtpPurpose purpose, String otp) {
+        return hashOtp(user, purpose, otp, null);
+    }
+
+    private String hashOtp(User user, OtpPurpose purpose, String otp, String salt) {
         String binding = user.getId() + ":" + purpose.name() + ":" + otp;
+        if (salt != null) {
+            binding = salt + ":" + binding;
+        }
         return HashUtils.hmacSha256Hex(otpHashKey, binding);
+    }
+
+    private String generateSalt() {
+        byte[] salt = new byte[32];
+        secureRandom.nextBytes(salt);
+        StringBuilder sb = new StringBuilder(salt.length * 2);
+        for (byte b : salt) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
     private void enforceRateLimit(String rlKey) {

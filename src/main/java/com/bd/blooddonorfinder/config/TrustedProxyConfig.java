@@ -9,12 +9,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class TrustedProxyConfig {
     private static final String DEFAULT_PROXY_REGEX =
+            // Only trust private/loopback proxies by default; public proxies
+            // (for example a CDN range) must be opted in explicitly through
+            // app.proxy.trusted-ip-regex.
             "10\\.\\d+\\.\\d+\\.\\d+|"
                     + "172\\.(1[6-9]|2\\d|3[01])\\.\\d+\\.\\d+|"
                     + "192\\.168\\.\\d+\\.\\d+|"
-                    + "103\\.(21|22|31)\\.(2[24-9]|3[0-1]|1[6-9])\\.\\d+|"
-                    + "104\\.(16|17|18|19|2[0-6])\\.\\d+\\.\\d+|"
-                    + "108\\.162\\.(19[2-9]|2[0-2]\\d)\\.\\d+|"
+                    + "127\\.0\\.0\\.1|"
                     + "::1|fd[0-9a-f]{2}:.*";
     private final String trustedProxyRegex;
 

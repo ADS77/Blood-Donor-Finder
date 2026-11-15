@@ -272,7 +272,17 @@ public class SondhanAuthService implements AuthService {
 
         try {
             OtpPurpose purpose = Utils.parseOtpPurpose(request.getPurpose());
-            User user = userService.findById(request.getUserId());
+            User user;
+            try {
+                user = userService.findById(request.getUserId());
+            } catch (AuthException e) {
+                // SECURITY: don't reveal whether a user_id exists — return the
+                // same generic OTP error an unknown id would produce.
+                log.warn("OTP verification for non-existent user_id={} from ip={}",
+                        request.getUserId(), clientContext.getIpAddress());
+                throw new OtpExpiredException(ErrorCode.OTP_EXPIRED,
+                        "No active OTP found, request a new one");
+            }
             validateOtpPurpose(user, purpose);
             try {
                 log.debug("Verifying otp for purpose : {}...", purpose);

@@ -16,5 +16,12 @@ public final class AppPermissions {
     public static final String ROLE_PREFIX = "ROLE_";
     public static final String ROLE_DONOR = "ROLE_DONOR";
     public static final String ROLE_ORG_ADMIN = "ROLE_ORG_ADMIN";
+    public static final String ROLE_SYSTEM_ADMIN = "ROLE_SYSTEM_ADMIN";
+
+    /**
+     * Legacy constant — the roles table seeds {@code ROLE_SYSTEM_ADMIN}, not
+     * {@code ROLE_SUPER_ADMIN}. Kept only for backward-compatible admin
+     * seeding; never use it for new @PreAuthorize checks.
+     */
     public static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
 }

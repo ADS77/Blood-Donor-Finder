@@ -46,6 +46,10 @@ public class RedisClusterConfig {
     @Primary
     public LettuceConnectionFactory redisConnectionFactory(RedisProperties properties){
         RedisClusterConfiguration clusterConfiguration = new RedisClusterConfiguration(clusterConfigurationProperties.getNodes());
+        // Honor spring.data.redis.password (Redis ACL) when configured.
+        if (properties.getPassword() != null && !properties.getPassword().isBlank()) {
+            clusterConfiguration.setPassword(properties.getPassword());
+        }
 
         GenericObjectPoolConfig<?> poolConfig = new GenericObjectPoolConfig<>();
         RedisProperties.Pool pool = properties.getLettuce().getPool();

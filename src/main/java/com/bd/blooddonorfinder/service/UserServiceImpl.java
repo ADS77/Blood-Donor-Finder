@@ -25,6 +25,7 @@ import com.bd.blooddonorfinder.service.otp.OtpIssuanceService;
 import com.bd.blooddonorfinder.utils.PiiTokenizer;
 import com.bd.blooddonorfinder.utils.Utils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -78,24 +79,29 @@ public class UserServiceImpl implements UserService{
                         new AuthException(ErrorCode.USER_NOT_FOUND, "User not found"));
     }
 
+    @Value("${app.security.anti-enumeration.enabled:true}")
+    private boolean antiEnumerationEnabled;
+
     @Override
     public OtpSentResponse registerNewUser(RegisterRequest registerRequest, String ipAddress, String userAgent) {
-        if(piiTokenizer.exists(registerRequest.getEmail())){
-            piiTokenizer.findByPlaintext(registerRequest.getEmail()).ifPresent(token -> {
-                        if(existByEmailToken(token)){
-                            throw new AuthException(ErrorCode.USER_ALREADY_EXISTS_WITH_EMAIL,
-                                    "A user with this email already exists");
-                        }
-                    }
-            );
+        boolean emailExists = existsFor(registerRequest.getEmail(), true);
+        boolean phoneExists = existsFor(registerRequest.getPhone(), false);
+
+        if (antiEnumerationEnabled && (emailExists || phoneExists)) {
+            // SECURITY: respond exactly like a fresh registration so an attacker
+            // cannot probe which emails/phones hold accounts. No OTP is sent, and
+            // the decoy user_id cannot pass OTP verification.
+            log.warn("Registration blocked for existing account (emailExists={}, phoneExists={}, ip={})",
+                    emailExists, phoneExists, ipAddress);
+            return new OtpSentResponse(UUID.randomUUID(), "OTP sent", 180);
         }
-        if(piiTokenizer.exists(registerRequest.getPhone())){
-            piiTokenizer.findByPlaintext(registerRequest.getPhone()).ifPresent(token->{
-                if(existByPhoneToken(token)){
-                    throw new AuthException(ErrorCode.USER_ALREADY_EXISTS_WITH_PHONE,
-                            "A user with this phone number already exists");
-                }
-            });
+        if (emailExists || phoneExists) {
+            if (emailExists) {
+                throw new AuthException(ErrorCode.USER_ALREADY_EXISTS_WITH_EMAIL,
+                        "A user with this email already exists");
+            }
+            throw new AuthException(ErrorCode.USER_ALREADY_EXISTS_WITH_PHONE,
+                    "A user with this phone number already exists");
         }
         var phoneToken = piiTokenizer.findOrCreate(registerRequest.getPhone(), PiiType.PHONE);
         var emailToken = piiTokenizer.findOrCreate(registerRequest.getEmail(), PiiType.EMAIL);
@@ -204,6 +210,16 @@ public class UserServiceImpl implements UserService{
     @Override
     public boolean existByPhoneToken(PiiToken phoneToken) {
         return userRepository.existsByPhoneToken(phoneToken);
+    }
+
+    /** Checks whether an active account already holds the given email/phone. */
+    private boolean existsFor(String plaintext, boolean isEmail) {
+        if (!piiTokenizer.exists(plaintext)) {
+            return false;
+        }
+        return piiTokenizer.findByPlaintext(plaintext)
+                .map(token -> isEmail ? existByEmailToken(token) : existByPhoneToken(token))
+                .orElse(false);
     }
 
     @Override

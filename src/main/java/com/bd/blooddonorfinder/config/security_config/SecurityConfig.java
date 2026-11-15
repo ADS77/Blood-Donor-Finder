@@ -3,9 +3,12 @@ package com.bd.blooddonorfinder.config.security_config;
 import com.bd.blooddonorfinder.config.cors_config.CorsProperties;
 import com.bd.blooddonorfinder.security.RestAccessDeniedHandler;
 import com.bd.blooddonorfinder.security.RestAuthEntryPoint;
+import com.bd.blooddonorfinder.security.filter.IpRateLimitFilter;
 import com.bd.blooddonorfinder.security.filter.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,26 +35,57 @@ public class SecurityConfig {
     private final RestAuthEntryPoint authEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
     private final CorsProperties corsProperties;
+    private final StringRedisTemplate redisTemplate;
 
-    private static final String[] PUBLIC_ENDPOINTS = {
+    private static final String[] PUBLIC_ENDPOINTS_WITH_API_DOCS = {
             "/api/auth/**",
+            "/api/public/**",
+            "/api/search/donors",
+            "/api/search/donors/nearby",
+            // WebSocket handshake is public at the HTTP layer; STOMP CONNECT
+            // frames are authenticated by StompAuthChannelInterceptor.
+            "/ws/**",
+            "/ws-sockjs/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            // Includes /actuator/health/liveness and /readiness used by
-            // container health checks and orchestrators.
             "/actuator/health/**",
             "/error"
     };
 
+    private static final String[] PUBLIC_ENDPOINTS_NO_API_DOCS = {
+            "/api/auth/**",
+            "/api/public/**",
+            "/api/search/donors",
+            "/api/search/donors/nearby",
+            "/ws/**",
+            "/ws-sockjs/**",
+            "/actuator/health/**",
+            "/error"
+    };
+
+    @Value("${app.security.api-docs.public:false}")
+    private boolean apiDocsPublic;
+
+    @Value("${app.security.rate-limit.enabled:true}")
+    private boolean rateLimitEnabled;
+
+    @Value("${app.security.rate-limit.auth-per-minute:30}")
+    private int authRateLimitPerMinute;
+
+    @Value("${app.security.rate-limit.search-per-minute:60}")
+    private int searchRateLimitPerMinute;
+
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           RestAuthEntryPoint authEntryPoint,
                           RestAccessDeniedHandler accessDeniedHandler,
-                          CorsProperties corsProperties) {
+                          CorsProperties corsProperties,
+                          StringRedisTemplate redisTemplate) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authEntryPoint = authEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
         this.corsProperties = corsProperties;
+        this.redisTemplate = redisTemplate;
     }
 
     @Bean
@@ -64,9 +98,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers("/actuator/**").hasAnyRole("SUPER_ADMIN", "ORG_ADMIN")
-                        .requestMatchers("/api/mail/**", "/es/**").hasAnyRole("SUPER_ADMIN", "ORG_ADMIN")
+                        .requestMatchers(apiDocsPublic ? PUBLIC_ENDPOINTS_WITH_API_DOCS : PUBLIC_ENDPOINTS_NO_API_DOCS)
+                        .permitAll()
+                        .requestMatchers("/actuator/**").hasAnyRole("SYSTEM_ADMIN", "SUPER_ADMIN", "ORG_ADMIN")
+                        .requestMatchers("/api/mail/**", "/es/**").hasAnyRole("SYSTEM_ADMIN", "SUPER_ADMIN", "ORG_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authEntryPoint)
@@ -74,6 +109,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
+                .addFilterBefore(ipRateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.deny())
@@ -85,6 +121,12 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31536000))
                 );
         return http.build();
+    }
+
+    @Bean
+    public IpRateLimitFilter ipRateLimitFilter() {
+        // registered here (not as a @Component) so it only runs once, inside the security chain
+        return new IpRateLimitFilter(redisTemplate, rateLimitEnabled, authRateLimitPerMinute, searchRateLimitPerMinute);
     }
 
     @Bean

@@ -202,8 +202,7 @@ public class JwtTokenProvider {
 
 
     public TokenResponse getTokenPair(UserPrincipal principal) throws InvalidJwtTokenException {
-
-        return issueTokenPair(principal.getUsername(), principal.getId(),principal.getAuthorityStrings());
+        return issueTokenPair(principal.getUsername(), principal.getId(), principal.getAuthorityStrings());
     }
 
     public String getAccessToken(UserPrincipal principal) throws InvalidJwtTokenException {
