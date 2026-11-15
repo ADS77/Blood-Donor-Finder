@@ -102,6 +102,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- WebSocket (realtime chat push channel) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- Kafka -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
@@ -180,6 +186,20 @@
             <groupId>net.javacrumbs.shedlock</groupId>
             <artifactId>shedlock-provider-jdbc-template</artifactId>
             <version>5.13.0</version>
+        </dependency>
+
+        <!-- Push notifications (FCM). App degrades gracefully when disabled. -->
+        <dependency>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>9.2.0</version>
+        </dependency>
+
+        <!-- Document service: S3-compatible object storage (MinIO) -->
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.10</version>
         </dependency>
 
     </dependencies>
