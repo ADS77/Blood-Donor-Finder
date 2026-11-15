@@ -62,6 +62,8 @@ services:
       - PII_HASH_KEY
       - OTP_HASH_KEY
       - EMAIL_PAYLOAD_KEY
+      - MINIO_ACCESS_KEY
+      - MINIO_SECRET_KEY
       - rsa_private.pem
       - rsa_public.pem
     ports:
@@ -405,6 +407,10 @@ secrets:
     file: ./secrets/otp_hash_key
   EMAIL_PAYLOAD_KEY:
     file: ./secrets/email_payload_key
+  MINIO_ACCESS_KEY:
+    file: ./secrets/minio_access_key
+  MINIO_SECRET_KEY:
+    file: ./secrets/minio_secret_key
   rsa_private.pem:
     file: ./secrets/rsa_private.pem
   rsa_public.pem:

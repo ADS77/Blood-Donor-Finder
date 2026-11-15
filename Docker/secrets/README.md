@@ -20,6 +20,8 @@ resolve `${DB_PASSWORD}` in `application.properties`.
 | `pii_hash_key` | `PII_HASH_KEY` | keyed hash for PII lookup |
 | `otp_hash_key` | `OTP_HASH_KEY` | keyed hash for OTPs |
 | `email_payload_key` | `EMAIL_PAYLOAD_KEY` | key for the email outbox payload |
+| `minio_access_key` | `MINIO_ACCESS_KEY` | object-storage service account (not root) |
+| `minio_secret_key` | `MINIO_SECRET_KEY` | object-storage service account secret |
 | `rsa_private.pem` | file path | PKCS#8 JWT signing key |
 | `rsa_public.pem` | file path | X.509 public key |
 
@@ -38,6 +40,8 @@ done
 # Secrets you must obtain from the real systems
 printf '%s' 'postgres-password' > secrets/db_password
 printf '%s' 'smtp-app-password' > secrets/mail_password
+printf '%s' 'object-storage-access-key' > secrets/minio_access_key
+printf '%s' 'object-storage-secret-key' > secrets/minio_secret_key
 
 # JWT signing key pair (outside the repository; back this up)
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out secrets/rsa_private.pem
