@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
@@ -135,6 +137,22 @@ public class GlobalExceptionHandler {
         }
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST",
                 "Malformed or missing request data", request);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleUploadTooLarge(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        log.warn("Upload rejected (size limit) on {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE",
+                "File too large", request);
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiErrorResponse> handleMalformedMultipart(
+            MultipartException ex, HttpServletRequest request) {
+        log.warn("Malformed multipart request on {}: {}", request.getRequestURI(), ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST",
+                "Malformed file upload", request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -276,6 +294,10 @@ public class GlobalExceptionHandler {
             case UNAUTHORIZED, REFRESH_REUSE_ATTACK, TOKEN_EXPIRED, TOKEN_INVALID -> HttpStatus.UNAUTHORIZED;
             case RATE_LIMITED -> HttpStatus.TOO_MANY_REQUESTS;
             case ACCOUNT_LOCKED, USER_NOT_VERIFIED -> HttpStatus.FORBIDDEN;
+            case DOCUMENT_NOT_FOUND, REQUEST_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case DOCUMENT_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
+            case DOCUMENT_UNSUPPORTED_FORMAT, DOCUMENT_TYPE_MISMATCH -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+            case DOCUMENT_UPLOAD_FAILED -> HttpStatus.BAD_GATEWAY;
             case OTP_SEND_FAILED -> HttpStatus.BAD_GATEWAY;
             case INVALID_OTP,
                  OTP_EXPIRED,
