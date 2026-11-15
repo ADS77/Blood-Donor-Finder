@@ -9,12 +9,11 @@ ALTER TABLE blood_request
     ADD COLUMN last_escalated_at TIMESTAMP,
     ADD COLUMN alerted_user_ids JSONB NOT NULL DEFAULT '[]'::jsonb;
 
--- pending urgent/critical requests that are still unanswered
+-- pending urgent/critical requests that are still unanswered.
+-- request_time is the creation timestamp on this table (there is no created_at).
 CREATE INDEX idx_blood_request_escalation
-    ON blood_request (urgency, created_at)
+    ON blood_request (urgency, request_time)
     WHERE status = 'PENDING' AND urgency IN ('URGENT', 'CRITICAL');
-
-CREATE TYPE request_urgency AS ENUM ('ROUTINE', 'URGENT', 'CRITICAL');
 
 ALTER TYPE notification_type ADD VALUE 'URGENT_REQUEST_ALERT';
 ALTER TYPE notification_type ADD VALUE 'DOCUMENT_VERIFIED';
