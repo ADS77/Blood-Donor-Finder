@@ -10,8 +10,11 @@ import com.bd.blooddonorfinder.utils.GeoUtils;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,10 @@ public class DonorSearchServiceImpl implements DonorSearchService{
     private final UserRepository userRepository;
     private final GeoLocationService geoLocationService;
     private final Executor geoFetchExecutor;
+
+    /** Freshness window — donors with older coordinates are excluded from nearby/notify flows. */
+    @Value("${app.search.max-location-age-days:90}")
+    private long maxLocationAgeDays;
 
     public DonorSearchServiceImpl(UserRepository userRepository,
                                   GeoLocationService geoLocationService,
@@ -91,22 +98,39 @@ public class DonorSearchServiceImpl implements DonorSearchService{
     }
 
     private List<User> filterByDistance(List<User> donors, DonorSearchRequest searchRequest) {
-        return donors.stream()
-                .filter(donor -> {
-                    GeoLocation geoLocation = donor.getGeoLocation();
-                    if (geoLocation == null || geoLocation.getLatitude() == null
-                            || geoLocation.getLongitude() == null) {
-                        return false;
-                    }
-                    double distance = GeoUtils.haversine(
-                            GeoUtils.sanitizeGeoUnit(searchRequest.getGeoLocation().getLatitude()),
-                            GeoUtils.sanitizeGeoUnit(geoLocation.getLatitude()),
-                            GeoUtils.sanitizeGeoUnit(searchRequest.getGeoLocation().getLongitude()),
-                            GeoUtils.sanitizeGeoUnit(geoLocation.getLongitude())
-                    );
-                    return distance <= searchRequest.getRadius();
-                })
-                .collect(Collectors.toList());
+        // Location-freshness pipeline: a donor whose coordinates have not been
+        // confirmed within the freshness window may live somewhere else now —
+        // notifying them would page donors far away from the requester.
+        Instant freshnessCutoff = Instant.now().minus(Duration.ofDays(maxLocationAgeDays));
+        List<User> result = new ArrayList<>(donors.size());
+        int staleCount = 0;
+        for (User donor : donors) {
+            GeoLocation geoLocation = donor.getGeoLocation();
+            if (geoLocation == null || geoLocation.getLatitude() == null
+                    || geoLocation.getLongitude() == null) {
+                continue;
+            }
+            // Legacy rows are backfilled by V33; null is treated defensively as fresh.
+            if (geoLocation.getGeoUpdatedAt() != null
+                    && geoLocation.getGeoUpdatedAt().isBefore(freshnessCutoff)) {
+                staleCount++;
+                continue;
+            }
+            double distance = GeoUtils.haversine(
+                    GeoUtils.sanitizeGeoUnit(searchRequest.getGeoLocation().getLatitude()),
+                    GeoUtils.sanitizeGeoUnit(geoLocation.getLatitude()),
+                    GeoUtils.sanitizeGeoUnit(searchRequest.getGeoLocation().getLongitude()),
+                    GeoUtils.sanitizeGeoUnit(geoLocation.getLongitude())
+            );
+            if (distance <= searchRequest.getRadius()) {
+                result.add(donor);
+            }
+        }
+        if (staleCount > 0) {
+            log.info("Excluded {} donor(s) with unconfirmed location older than {} days",
+                    staleCount, maxLocationAgeDays);
+        }
+        return result;
     }
 
     @Override

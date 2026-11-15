@@ -63,6 +63,9 @@ public class ElasticSearchIndexServiceImpl implements ElasticSearchIndexService{
         Map<String, Object> partialDoc = new HashMap<>();
         partialDoc.put("location", Map.of("lat", latitude, "lon", longitude));
         partialDoc.put("updatedAt", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")));
+        // Freshness stamp: any confirmed geo write (device update or enrichment)
+        // makes the donor's position fresh for nearby searches.
+        partialDoc.put("geoUpdatedAt", System.currentTimeMillis());
 
         Document document = Document.from(partialDoc);
         UpdateQuery updateQuery = UpdateQuery.builder(docId)

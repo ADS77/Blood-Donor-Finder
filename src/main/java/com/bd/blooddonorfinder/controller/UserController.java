@@ -1,8 +1,12 @@
 package com.bd.blooddonorfinder.controller;
 
+import com.bd.blooddonorfinder.model.common.GeoLocation;
 import com.bd.blooddonorfinder.model.common.User;
+import com.bd.blooddonorfinder.payload.request.LocationUpdateRequest;
 import com.bd.blooddonorfinder.payload.request.UpdateProfileRequest;
+import com.bd.blooddonorfinder.payload.response.LocationUpdateResponse;
 import com.bd.blooddonorfinder.security.UserPrincipal;
+import com.bd.blooddonorfinder.service.LocationIngestService;
 import com.bd.blooddonorfinder.service.UserService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -14,15 +18,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
+import java.util.Objects;
+
 @RestController
 @RequestMapping("/api/user")
 @Slf4j
 public class UserController {
 
     private final UserService userService;
+    private final LocationIngestService locationIngestService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService,
+                          LocationIngestService locationIngestService) {
         this.userService = userService;
+        this.locationIngestService = locationIngestService;
     }
 
     /**
@@ -52,14 +62,34 @@ public class UserController {
         if (request.getIsAvailable() != null) {
             existingUser.setIsAvailable(request.getIsAvailable());
         }
-        if (request.getGeoLocation() != null) {
-            existingUser.setGeoLocation(request.getGeoLocation());
-        }
         if (request.getLastDonationDate() != null) {
             existingUser.setLastDonationDate(request.getLastDonationDate());
         }
 
+        boolean coordinatesChanged = false;
+        if (request.getGeoLocation() != null) {
+            GeoLocation previousGeo = existingUser.getGeoLocation();
+            Instant previousStamp = previousGeo != null ? previousGeo.getGeoUpdatedAt() : null;
+            Instant previousReconfirm = previousGeo != null ? previousGeo.getGeoReconfirmRequestedAt() : null;
+            coordinatesChanged = hasNewCoordinates(previousGeo, request.getGeoLocation());
+            existingUser.setGeoLocation(request.getGeoLocation());
+            if (coordinatesChanged) {
+                // Location-freshness pipeline: a real coordinate change through the
+                // profile endpoint renews the freshness stamp and re-enters ES sync.
+                existingUser.getGeoLocation().setGeoUpdatedAt(Instant.now());
+                existingUser.getGeoLocation().setGeoReconfirmRequestedAt(null);
+            } else {
+                // Preserve server-owned freshness stamps — a client-supplied
+                // geoUpdatedAt would let donors spoof freshness forever.
+                existingUser.getGeoLocation().setGeoUpdatedAt(previousStamp);
+                existingUser.getGeoLocation().setGeoReconfirmRequestedAt(previousReconfirm);
+            }
+        }
+
         userService.saveUser(existingUser);
+        if (coordinatesChanged) {
+            locationIngestService.propagateLocationChange(existingUser);
+        }
         log.debug("Updated profile for userId={}", existingUser.getId());
         return ResponseEntity.ok().body("user updated");
     }
@@ -73,5 +103,30 @@ public class UserController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateProfileRequest request) {
         return updateCurrentUser(principal, request);
+    }
+
+    /**
+     * Location freshness pipeline (write side): the donor's device reports its
+     * current position. Throttled + deduplicated; coordinates flow to
+     * Elasticsearch asynchronously via USER_LOCATION_UPDATED.
+     */
+    @PostMapping("/location")
+    public ResponseEntity<String> updateLocation(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody LocationUpdateRequest request) {
+        // SECURITY: principal-based — a donor can only ever update their own location
+        LocationUpdateResponse result = locationIngestService.updateLocation(principal.getId(), request);
+        return ResponseEntity.ok().body(result.message());
+    }
+
+    /** True when the incoming profile carries different (and usable) coordinates. */
+    private static boolean hasNewCoordinates(GeoLocation current, GeoLocation incoming) {
+        if (incoming == null || incoming.getLatitude() == null || incoming.getLongitude() == null) {
+            return false;
+        }
+        return current == null
+                || current.getLatitude() == null || current.getLongitude() == null
+                || !Objects.equals(current.getLatitude(), incoming.getLatitude())
+                || !Objects.equals(current.getLongitude(), incoming.getLongitude());
     }
 }
