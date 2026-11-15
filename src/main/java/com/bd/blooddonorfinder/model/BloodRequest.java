@@ -80,6 +80,10 @@ public class BloodRequest implements Serializable {
     @Column(name = "dispute_reason", length = 500)
     private String disputeReason;
 
+    /** Admin resolution note recorded when a dispute is adjudicated (V40). */
+    @Column(name = "admin_note", length = 500)
+    private String adminNote;
+
     // ── urgency + escalation (V41) ─────────────────────────────────────
     @Enumerated(EnumType.STRING)
     @Column(name = "urgency", nullable = false, length = 20)

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public interface PushTokenRepository extends JpaRepository<PushToken, UUID> {
     void deleteByUserId(UUID userId);
 
     /** Removes every device token that FCM reported as invalid/unregistered. */
+    @Transactional
     @Modifying
     @Query("DELETE FROM PushToken t WHERE t.token = :token")
     int deleteByToken(@Param("token") String token);

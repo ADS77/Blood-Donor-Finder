@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
      * Returns 1 when this caller is the winner, 0 when another donor was faster
      * or the request is no longer open.
      */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE BloodRequest b
@@ -43,6 +45,7 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
      * Donor marks the donation complete: ACCEPTED → PENDING_APPROVAL, only when
      * this donor is the accepted one. Returns 1 on success, 0 otherwise.
      */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE BloodRequest b
@@ -65,6 +68,7 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
      * is the race guard — only one approval can ever transition the state, so
      * donation_record (unique per request) can never be double-written.
      */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE BloodRequest b
@@ -76,6 +80,7 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
     int transitionToFulfilled(@Param("requestId") UUID requestId, @Param("now") Instant now);
 
     /** Requester disputes: PENDING_APPROVAL → DISPUTED. Returns 0 when raced. */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE BloodRequest b
@@ -101,6 +106,7 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
      * Bulk-expiry: every PENDING request past its TTL becomes EXPIRED in one
      * statement (cannot touch accepted/completed requests).
      */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE BloodRequest b
@@ -123,6 +129,7 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
                                                 @Param("maxLevel") int maxLevel, Pageable pageable);
 
     /** Advances the escalation marker (idempotent per sweep via ShedLock). */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE BloodRequest b
@@ -134,4 +141,33 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
     int applyEscalation(@Param("requestId") UUID requestId,
                         @Param("alertedIds") List<String> alertedIds,
                         @Param("now") LocalDateTime now);
+
+    /** Admin adjudicates a dispute in the donor's favour: DISPUTED → FULFILLED. */
+    @Transactional
+    @Modifying
+    @Query("""
+           UPDATE BloodRequest b
+              SET b.status = com.bd.blooddonorfinder.model.enums.RequestStatus.FULFILLED,
+                  b.completedAt = :now,
+                  b.adminNote = :note
+            WHERE b.id = :requestId
+              AND b.status = com.bd.blooddonorfinder.model.enums.RequestStatus.DISPUTED
+           """)
+    int adminResolveDisputedToApproved(@Param("requestId") UUID requestId,
+                                       @Param("note") String note,
+                                       @Param("now") Instant now);
+
+    /** Admin adjudicates a dispute against the claim: DISPUTED → CANCELLED. */
+    @Transactional
+    @Modifying
+    @Query("""
+           UPDATE BloodRequest b
+              SET b.status = com.bd.blooddonorfinder.model.enums.RequestStatus.CANCELLED,
+                  b.adminNote = :note
+            WHERE b.id = :requestId
+              AND b.status = com.bd.blooddonorfinder.model.enums.RequestStatus.DISPUTED
+           """)
+    int adminResolveDisputedToCancelled(@Param("requestId") UUID requestId,
+                                        @Param("note") String note,
+                                        @Param("now") Instant now);
 }

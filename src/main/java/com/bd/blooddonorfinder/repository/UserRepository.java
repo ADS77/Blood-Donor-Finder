@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -37,12 +38,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdForUpdate(@Param("id") UUID id);
 
+    @Transactional
     @Modifying(clearAutomatically = true)
     @Query("UPDATE User u set u.geoLocation.geoStatus = 'PROCESSING', " +
             "u.geoLocation.geoClaimedAt = CURRENT_TIMESTAMP "+
             "where u.id = :id AND u.geoLocation.geoStatus = 'PENDING'")
     int claimForGeoEnrichment(@Param("id") UUID id);
 
+    @Transactional
     @Modifying
     @Query("UPDATE User u SET u.geoLocation.geoStatus = :nextStatus, " +
             "u.geoLocation.geoRetryCount = :attempts, " +
@@ -53,6 +56,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                                          @Param("attempts") int attempts,
                                          @Param("error") String error);
 
+    @Transactional
     @Modifying
     @Query("UPDATE User u SET u.geoLocation.latitude = :lat, u.geoLocation.longitude = :lon, " +
             "u.geoLocation.geoStatus = :status WHERE u.id = :id AND u.geoLocation.geoStatus = 'PROCESSING'")
@@ -61,6 +65,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                            @Param("lon") Double lon,
                            @Param("status") GeoStatus status);
 
+    @Transactional
     @Modifying
     @Query("UPDATE User u SET u.geoLocation.latitude = :lat, u.geoLocation.longitude = :lon, " +
             "u.geoLocation.geoUpdatedAt = :geoUpdatedAt, u.geoLocation.geoReconfirmRequestedAt = NULL " +
@@ -88,6 +93,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                                            @Param("reconfirmCooldown") Instant reconfirmCooldown,
                                            Pageable pageable);
 
+    @Transactional
     @Modifying
     @Query("UPDATE User u SET u.geoLocation.geoReconfirmRequestedAt = :requestedAt WHERE u.id = :id")
     int markReconfirmationRequested(@Param("id") UUID id, @Param("requestedAt") Instant requestedAt);
@@ -100,6 +106,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * the running-average rating. JPQL evaluates SET expressions against the
      * pre-update row, so the average math below is exact and race-safe.
      */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE User u
@@ -114,6 +121,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                             @Param("rating") int rating);
 
     /** Same, when the requester approved without leaving a rating. */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE User u
@@ -124,6 +132,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     int recordDonation(@Param("donorId") UUID donorId, @Param("donatedAt") LocalDateTime donatedAt);
 
     /** Grants the verified-donor badge; returns 1 only when it changed. */
+    @Transactional
     @Modifying
     @Query("""
            UPDATE User u SET u.isVerified = true
@@ -131,6 +140,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
            """)
     int markVerifiedIfAbsent(@Param("userId") UUID userId);
 
+    @Transactional
     @Modifying
     @Query("""
     UPDATE User u
