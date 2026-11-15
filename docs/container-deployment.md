@@ -59,8 +59,10 @@ The application is a Spring Boot 3 service with these runtime dependencies:
 
 * PostgreSQL (primary datastore, Flyway migrations);
 * Kafka (domain events and the email notification outbox);
-* Redis cluster (sessions, rate limits, idempotency);
-* Elasticsearch (donor search and application logs).
+* Redis cluster (sessions, rate limits, idempotency, chat presence and WS fanout);
+* Elasticsearch (donor search and application logs);
+* MinIO / S3 (documents and profile photos, presigned access);
+* optionally Firebase Cloud Messaging (mobile push — disabled by default).
 
 Two Compose files describe the two supported modes.
 
@@ -80,6 +82,8 @@ This starts:
 | `elasticsearch` | single node, security disabled | `9200`, `9300` |
 | `redis-1` … `redis-6` | 3 masters + 3 replicas, hostname announcements | none |
 | `redis-cluster-init` | one-shot `redis-cluster create` | none |
+| `minio` | S3-compatible document storage | `127.0.0.1:9000` (API), `127.0.0.1:9001` (console) |
+| `minio-init` | one-shot bucket creation, then exits | none |
 
 Optional developer tooling is behind profiles:
 
@@ -117,6 +121,16 @@ Notes specific to development:
   which PostgreSQL reports as *"database ... has no actual collation version"*
   when it opens a data directory created by a glibc image. Keep the image family
   aligned with the data directory, or reindex/dump-restore after switching.
+* MinIO is bound to loopback only and stores objects in the `minio-data` volume.
+  The app talks to `http://minio:9000` inside the Compose network and waits for
+  `minio-init` to finish. `minio-init` creates the `sondhan-profile` and
+  `sondhan-medical` buckets idempotently; development defaults are
+  `sondhan-admin` / `sondhan-secret` and **must be overridden** in any shared
+  environment. The app also re-creates missing buckets at startup
+  (`app.storage.ensure-buckets=true`) as a best-effort safety net.
+* Presigned document URLs are generated against `MINIO_ENDPOINT`. A browser must
+  be able to reach that hostname, so in production point it at the public
+  S3/MinIO endpoint (or a proxy in front of it), not at an internal address.
 
 ### 2.2 Production stack — `Docker/docker-compose.prod.yml`
 
@@ -150,6 +164,31 @@ Production properties:
   `SPRING_CONFIG_IMPORT=optional:configtree:/run/secrets/`;
 * Swagger/OpenAPI is disabled with `SPRINGDOC_ENABLED=false`;
 * the application uses the liveness probe for its Docker health check.
+
+Production deployment does **not** include MinIO. Point `MINIO_ENDPOINT` at a
+managed S3-compatible service (or a separate MinIO host), provide
+`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` through the secret manager, and pre-create
+the `sondhan-profile` and `sondhan-medical` buckets with a least-privilege
+policy. `MINIO_ENDPOINT` must be publicly resolvable by clients because
+presigned download URLs are generated against it; keep the write path private.
+
+Realtime chat uses STOMP over WebSocket at `/sondhan/ws`. The reverse proxy must:
+
+* forward the WebSocket upgrade headers (`Upgrade`, `Connection`) and not
+  buffer the connection;
+* allow long-lived idle connections (at least the presence TTL, 300 s) and send
+  periodic pings;
+* keep the same host/path as the REST API, so the client can reuse the access
+  token and the CORS allow-list (`CORS_ORIGIN_*`) applies to the handshake.
+
+Sticky sessions are **not** required: cross-node delivery uses the
+`sondhan:ws:fanout` Redis pub/sub channel, and clients backfill missed messages
+over REST. Redis must therefore be reachable from every application instance.
+
+Mobile push is opt-in. Set `PUSH_ENABLED=true` and mount a Firebase service
+account JSON, exposing its path as `FCM_CREDENTIALS_PATH`. When disabled, the
+notification center still works through WebSocket and REST; only device push is
+skipped.
 
 On the first boot of the self-hosted profile the application may restart a few
 times until PostgreSQL, Kafka and Elasticsearch are ready. `restart: always`
@@ -198,6 +237,11 @@ Rules:
   they are not encrypted at rest by Docker.
 * Back up `pii_encryption_key`, `pii_hash_key` and `otp_hash_key`. Losing them
   makes existing encrypted data and hashes unrecoverable.
+* Object storage credentials (`MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY`) are
+  secrets. Use a dedicated service account scoped to the two document buckets,
+  never the MinIO root user.
+* Firebase credentials (`FCM_CREDENTIALS_PATH`) are secrets; mount the service
+  account file read-only and keep it out of the image and Git.
 * Rotating PII/OTP keys requires a data migration. Rotating the JWT key pair
   invalidates issued tokens.
 * For managed PostgreSQL, include TLS in `DB_URL` (for example
@@ -211,6 +255,7 @@ Rules:
 | Elasticsearch | Snapshot repository to object storage; search data is rebuildable but snapshots speed recovery |
 | Kafka | Replication is not backup. Persist critical topics or rely on the outbox table; back up topic configuration |
 | Redis | AOF/RDB for cache is optional; sessions can be lost (users re-login) |
+| MinIO / object storage | Versioning + lifecycle on the document buckets; back up `minio-data` for the self-hosted dev stack |
 | Secrets | Encrypted backup in the secret manager |
 
 Example PostgreSQL backup from the self-hosted stack:
@@ -265,6 +310,8 @@ email outbox relay releases its claim before the process exits.
 | Kafka | consumer lag, under-replicated partitions |
 | Elasticsearch | `_cluster/health`, pending tasks, disk watermark |
 | Redis | `cluster info`, `cluster nodes`, memory |
+| MinIO / S3 | bucket health, capacity, error rate on `PutObject`/presign |
+| WebSocket | active STOMP sessions and fanout subscriber count (logs/metrics) |
 
 `micrometer-registry-prometheus` is on the classpath. To scrape metrics, add
 `prometheus` to `management.endpoints.web.exposure.include` and expose the
@@ -324,6 +371,10 @@ Implemented in this change:
   actuator endpoints in the application;
 * `LOG_DIR` made overridable so the container writes logs to the mounted
   `/var/log/sondhan` volume instead of a read-only image path;
+* MinIO document storage plus a one-shot `minio-init` bucket bootstrap in the
+  development stack, with managed object storage for production;
+* realtime chat/notification WebSocket support with Redis fanout (no sticky
+  sessions) and optional FCM device push;
 * this operating document.
 
 Deliberately out of scope:

@@ -7,25 +7,33 @@
 
 Sondhan is a Spring Boot backend for finding nearby blood donors. It handles
 donor registration, OTP verification, JWT authentication, donor search,
-blood-request creation, donor notifications, audit logging, and an
-event-driven search read model.
+blood-request creation, urgent-request escalation, request acceptance with
+private chat, donation completion, document verification, a notification center
+with a daily email digest, audit logging, and an event-driven search read model.
 
 The short version:
 
 * **PostgreSQL is the source of truth.** All business state, PII tokens, OTPs,
   outbox rows, idempotency markers and audit records live there.
-* **Kafka carries domain events** for search indexing, geo enrichment and email
-  delivery. Topics are versioned, with retry and dead-letter variants.
+* **Kafka carries domain events** for search indexing, geo/location sync and
+  email delivery. Topics are versioned, with retry and dead-letter variants.
 * **Redis holds ephemeral state** — token whitelisting, OTP counters, auth
-  failure counters, geocoding cache — and is a clustered cache, not a source of
-  truth.
-* **Elasticsearch is a derived read model** for registered donors. It can be
-  rebuilt from PostgreSQL and `user.registered` events, but there is no
-  automated reindex job yet.
+  failure counters, geocoding cache, chat presence and WebSocket fanout — and
+  is a clustered cache, not a source of truth.
+* **Elasticsearch is a derived read model** for registered donors, including a
+  `geoUpdatedAt` freshness stamp and plain `latitude`/`longitude` fields used by
+  the expanding-radius nearby search. It can be rebuilt from PostgreSQL and
+  `user.registered` events, but there is no automated reindex job yet.
 * **Email is sent through a transactional outbox**, never directly from a
-  business transaction.
-* **Geo enrichment is asynchronous** for new donors, with a scheduled worker,
-  claim-based locking and bounded retries.
+  business transaction. Product events are not emailed one by one; a daily
+  digest worker is the only product-email producer.
+* **Realtime chat is REST-first + STOMP push.** Messages are persisted over
+  REST, then pushed to `/user/queue/chat` via a Redis pub/sub fanout so any
+  application instance can reach the recipient.
+* **Geo enrichment and location freshness are asynchronous**, with scheduled
+  workers, claim-based locking and bounded retries.
+* **Documents live in MinIO**, an S3-compatible object store; the API only
+  issues short-lived presigned URLs.
 
 ---
 
@@ -61,22 +69,26 @@ the JWT filter and `STATELESS` policy govern request authentication.
 ```mermaid
 flowchart TB
     subgraph runtime[Sondhan runtime]
-        app["Spring Boot application<br/>REST API · Kafka consumers · scheduled workers"]
+        app["Spring Boot application<br/>REST API · STOMP/WS · Kafka consumers · scheduled workers"]
         pg[("PostgreSQL<br/>source of truth · Flyway")]
-        redis[("Redis cluster<br/>tokens · OTP state · cache")]
+        redis[("Redis cluster<br/>tokens · OTP state · cache · chat presence/fanout")]
         es[("Elasticsearch<br/>registered_donors read model")]
         kafka[("Kafka<br/>domain and email events")]
+        minio[("MinIO / S3<br/>documents and profile photos")]
     end
 
     smtp[SMTP provider]
     geocoder[Nominatim geocoder]
+    firebase[Firebase Cloud Messaging]
 
     app -->|"JPA / transactions"| pg
     app -->|"Lettuce"| redis
     app -->|"Spring Data Elasticsearch"| es
     app -->|"produce / consume"| kafka
+    app -->|"S3 API / presigned URLs"| minio
     app -->|"STARTTLS"| smtp
     app -->|"HTTPS, cached in Redis"| geocoder
+    app -->|"HTTP v1 push (optional)"| firebase
 ```
 
 Runtime characteristics:
@@ -118,15 +130,17 @@ Package responsibilities:
 | Package area | Responsibility |
 | --- | --- |
 | `controller` | REST endpoints and request/response mapping |
-| `service` | Use cases: auth, users, search, blood requests, OTP, mail, audit |
-| `service/es` | Elasticsearch donor indexing and admin search |
+| `service` | Use cases: auth, users, search, blood requests, chat, donations, documents, notifications, OTP, mail, audit |
+| `service/es` | Elasticsearch donor indexing, admin search and the expanding-radius nearby search |
+| `service/chat`, `service/push` | Realtime WebSocket fanout/presence and FCM push ports |
+| `storage` | Object-storage port and MinIO adapter for documents |
 | `repository` | Spring Data JPA and Elasticsearch repositories |
 | `kafka` | Events, topics, producers, consumers, retry/DLQ, outbox, idempotency |
-| `worker` | Scheduled geo-enrichment and outbox-relay jobs |
-| `security` | JWT filter, key provider, principal, CORS, entry points |
+| `worker` | Scheduled geo-enrichment, location-staleness, escalation, donation auto-approval, digest and outbox-relay jobs |
+| `security` | JWT filter, key provider, principal, CORS, API authorizer, IP rate limiter, entry points |
 | `search` | Redis GEO hot-path building blocks and search DTOs (not yet wired to an endpoint) |
 | `model` / `payload` | JPA entities, Elasticsearch documents, enums, requests/responses |
-| `config` | Kafka, Redis, Elasticsearch, async, cache, ShedLock, security, mail |
+| `config` | Kafka, Redis, Elasticsearch, async, cache, ShedLock, security, mail, WebSocket, MinIO |
 | `exception` | Domain exceptions and the global JSON error handler |
 
 Cross-cutting behaviour:
@@ -157,6 +171,13 @@ erDiagram
     BLOOD_REQUEST ||--o{ DONATION_HISTORY : "fulfilled by"
     APP_USER ||--o{ DONATION_HISTORY : "donor / recipient"
     APP_USER ||--o{ AUDIT_LOG : "acts in"
+    BLOOD_REQUEST ||--o| CHAT : "opens on accept"
+    APP_USER ||--o{ CHAT : "requester / donor"
+    CHAT ||--o{ CHAT_MESSAGE : "messages"
+    BLOOD_REQUEST ||--o| DONATION_RECORD : "completed as"
+    APP_USER ||--o{ NOTIFICATION : "receives"
+    APP_USER ||--o{ PUSH_TOKEN : "registers"
+    APP_USER ||--o{ DOCUMENT : "uploads"
 
     APP_USER {
         uuid id PK
@@ -193,11 +214,54 @@ erDiagram
     BLOOD_REQUEST {
         uuid id PK
         uuid requester_id FK
+        uuid accepted_donor_id FK
         string blood_group
         string status
+        string urgency
+        datetime expires_at
+        int escalation_level
         string city
         decimal latitude
         decimal longitude
+    }
+    CHAT {
+        uuid id PK
+        uuid request_id FK
+        uuid requester_id FK
+        uuid donor_id FK
+        string status
+    }
+    CHAT_MESSAGE {
+        uuid id PK
+        uuid chat_id FK
+        uuid sender_id FK
+        string body
+        datetime read_at
+    }
+    DONATION_RECORD {
+        uuid id PK
+        uuid blood_request_id FK
+        uuid donor_id FK
+        uuid requester_id FK
+        int rating
+    }
+    NOTIFICATION {
+        uuid id PK
+        uuid recipient_id FK
+        string type
+        jsonb payload
+        uuid reference_id
+        datetime read_at
+        datetime email_digest_at
+    }
+    DOCUMENT {
+        uuid id PK
+        uuid owner_id FK
+        string doc_type
+        string bucket
+        string object_key
+        string checksum_sha256
+        string verification_status
     }
     AUDIT_LOG {
         uuid id
@@ -216,8 +280,13 @@ erDiagram
 | `app_user` | Donor / requester account, hashed password, status flags, embedded geo location and geo-enrichment state |
 | `pii_tokens` | Encrypted email / phone values plus a keyed lookup hash |
 | `roles`, `permissions`, `user_roles`, `role_permissions` | Role-based access control |
-| `otp_codes` | Hashed, single-use OTPs with purpose and expiry |
-| `blood_request` | Blood requests created by authenticated users |
+| `otp_codes` | Single-use OTPs: server-side HMAC hash plus a per-code random salt |
+| `blood_request` | Blood requests, urgency/expiry/escalation state and the accepted donor |
+| `chat`, `chat_message` | One private chat per accepted request and its messages |
+| `notification` | In-app notification feed + realtime badge source (also the daily-digest source) |
+| `push_token` | Registered FCM device tokens per user |
+| `document` | Uploaded profile photos / medical reports with MinIO keys and verification state |
+| `donation_record` | Immutable record of each completed donation (audit + donor history) |
 | `donation_history` | Recorded donations between donor, recipient and request |
 | `audit_logs` | Security and account events, range-partitioned by `created_at` |
 | `processed_events` | Consumer idempotency markers keyed by Kafka `eventId` |
@@ -230,7 +299,7 @@ erDiagram
 
 | Index | Written by | Read by | Content |
 | --- | --- | --- | --- |
-| `registered_donors` | `UserRegisteredEventHandler`, `GeoEnrichedEventHandler` | Admin Elasticsearch endpoints | Donor profile for search, including geo point and PII **token ids** (never raw email/phone) |
+| `registered_donors` | `UserRegisteredEventHandler`, `GeoEnrichedEventHandler`, `UserLocationUpdatedEventHandler` | Admin Elasticsearch endpoints and nearby donor search | Donor profile for search, including geo point, `geoUpdatedAt` freshness stamp and PII **token ids** (never raw email/phone) |
 
 `donor_search_index` is referenced by the admin paginated-search repository
 configuration. See [known gaps](#15-known-gaps-and-current-state) for the index
@@ -247,8 +316,14 @@ alignment caveat.
 | `otp:rl:<sha256(recipient)>` | OTP request rate limit | 1 hour |
 | `otp:<userId>:<purpose>` | OTP state marker | OTP lifetime |
 | `sondhan::<cache>::<key>` | Spring Cache entries | Per-cache TTL |
+| `ws:presence:<userId>` | Owning WebSocket session id per online user | `app.chat.presence.ttl-seconds` (default 300 s) |
+| `loc:throttle:<userId>` | Per-user location-update throttle | `app.location.update.min-interval-seconds` |
 | `geo:donors:<bloodGroup>` | Reserved Redis GEO donor index | Not currently written by the active search path |
 | `search:rl:<userId>` | Reserved Redis GEO search rate limit | 1 minute |
+
+A Redis pub/sub channel (not a key family) — `sondhan:ws:fanout` — carries
+WebSocket fanout envelopes to every application instance. See
+[section 11.4](#114-request-accept-and-realtime-chat).
 
 Redis Cluster is used in Compose (3 masters, 3 replicas). Multi-key operations
 are avoided deliberately because keys can live in different hash slots.
@@ -271,15 +346,43 @@ unless the endpoint is marked public.
 | `GET` | `/api/auth/jwks.json` | Public | Publish the RSA public key as a JWK Set |
 | `PUT` | `/api/user/me` | Authenticated | Update the caller's own profile |
 | `POST` | `/api/user/update` | Authenticated | Backwards-compatible alias for `/me` (ignores any client-supplied user id) |
+| `POST` | `/api/user/location` | Authenticated | Publish a fresh device location (server-side throttle, Kafka fanout to ES) |
 | `POST` | `/api/blood-request/create` | Authenticated | Create a blood request owned by the caller |
+| `POST` | `/api/blood-request/{id}/accept` | `DONOR`, `ORG_ADMIN`, `SYSTEM_ADMIN` | Atomically accept an open request and open the private chat |
+| `POST` | `/api/search/donors` | Authenticated | Elasticsearch donor page search |
+| `POST` | `/api/search/donors/nearby` | Authenticated | Expanding-radius nearby search (5→80 km, `search_after` pagination) |
 | `POST` | `/api/search/eligible-donors` | Authenticated | Find nearby donors who pass the eligibility filter |
-| `POST` | `/api/search/notify-near-by-donors` | `SUPER_ADMIN`, `ORG_ADMIN` | Queue donor-alert emails for nearby eligible donors |
-| `POST` | `/api/mail/send` | `SUPER_ADMIN`, `ORG_ADMIN` | Send a mail through the mail service |
-| `POST` | `/es/users/save` | `SUPER_ADMIN`, `ORG_ADMIN` | Administrative donor index write |
-| `GET` | `/es/users/search_by_bloodgroup` | `SUPER_ADMIN`, `ORG_ADMIN` | Administrative donor search by blood group |
-| `POST` | `/es/users/search-user` | `SUPER_ADMIN`, `ORG_ADMIN` | Administrative paginated donor search |
+| `POST` | `/api/search/notify-near-by-donors` | `SYSTEM_ADMIN`, `ORG_ADMIN` | Queue donor-alert emails for nearby eligible donors |
+| `GET` | `/api/chat` | Authenticated (participant) | List the caller's chats |
+| `GET` | `/api/chat/{chatId}/messages` | Authenticated (participant) | Keyset message backfill |
+| `POST` | `/api/chat/{chatId}/messages` | Authenticated (participant) | Persist a message, then fan out over STOMP |
+| `POST` | `/api/chat/{chatId}/read` | Authenticated (participant) | Mark a chat read |
+| `GET` | `/api/notifications` | Authenticated | Notification feed (keyset) |
+| `GET` | `/api/notifications/unread-count` | Authenticated | Badge count |
+| `POST` | `/api/notifications/{id}/read` | Authenticated | Mark one notification read |
+| `POST` | `/api/notifications/read-all` | Authenticated | Mark every notification read |
+| `POST` | `/api/push/tokens` | Authenticated | Register an FCM device token |
+| `DELETE` | `/api/push/tokens/{token}` | Authenticated | Remove a device token |
+| `POST` | `/api/documents` | Authenticated | Upload a profile photo or report to MinIO (`multipart/form-data`) |
+| `GET` | `/api/documents` | Authenticated | List the caller's documents |
+| `GET` | `/api/documents/{id}` | Authenticated | Document metadata |
+| `GET` | `/api/documents/{id}/download-url` | Authenticated | Short-lived presigned download URL |
+| `DELETE` | `/api/documents/{id}` | Authenticated | Delete a document and its object |
+| `POST` | `/api/donations/{requestId}/complete` | `DONOR` | Donor marks the donation complete |
+| `POST` | `/api/donations/{requestId}/approve` | Authenticated (requester) | Approve, optionally rate 1–5 |
+| `POST` | `/api/donations/{requestId}/dispute` | Authenticated (requester) | Dispute a completion claim |
+| `GET` | `/api/donations/stats/{donorId}` | Authenticated | Public donor stats (count, rating) |
+| `GET` | `/api/donations/my` | Authenticated | The caller's donations |
+| `POST` | `/api/mail/send` | `SYSTEM_ADMIN`, `ORG_ADMIN` | Send a mail through the mail service |
+| `POST` | `/es/users/save` | `SYSTEM_ADMIN`, `ORG_ADMIN` | Administrative donor index write |
+| `GET` | `/es/users/search_by_bloodgroup` | `SYSTEM_ADMIN`, `ORG_ADMIN` | Administrative donor search by blood group |
+| `POST` | `/es/users/search-user` | `SYSTEM_ADMIN`, `ORG_ADMIN` | Administrative paginated donor search |
 | `GET` | `/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness` | Public | Container / orchestrator probes |
-| `GET` | `/actuator/**` (other) | `SUPER_ADMIN`, `ORG_ADMIN` | Actuator endpoints; only health/info are exposed |
+| `GET` | `/actuator/**` (other) | `SYSTEM_ADMIN`, `ORG_ADMIN` | Actuator endpoints; only health/info are exposed |
+
+WebSocket: STOMP clients connect to `/ws` (token supplied in the CONNECT frame)
+and subscribe to `/user/queue/chat`, `/user/queue/chat-events` and
+`/user/queue/notifications`.
 
 ---
 
@@ -348,15 +451,30 @@ Login and refresh follow the same trust model:
 Authorization:
 
 * Role checks use Spring method security (`@PreAuthorize`) and URL rules in
-  `SecurityConfig`.
+  `SecurityConfig`. The three roles are `ROLE_DONOR`, `ROLE_ORG_ADMIN` and
+  `ROLE_SYSTEM_ADMIN`; the database seeds `ROLE_SYSTEM_ADMIN` and the code
+  uses the `ROLE_` prefix consistently (`hasAnyRole('SYSTEM_ADMIN', …)`).
 * The default role for a newly verified user is `ROLE_DONOR`.
-* Administrative capabilities are restricted to `ORG_ADMIN` and the
-  super-admin role. See [known gaps](#15-known-gaps-and-current-state) for the
-  `SYSTEM_ADMIN` / `SUPER_ADMIN` naming caveat.
+* Administrative capabilities (mail, Elasticsearch writes, donor-alert
+  broadcasts, actuator) are restricted to `ORG_ADMIN` and `SYSTEM_ADMIN`.
+* Authorization is also enforced in `ApiAuthorizer` (`@authz`) and in service
+  code: every write is principal-bound, so a caller can only mutate their own
+  profile, documents, chat messages, notifications and push tokens.
+* Public endpoints are limited to auth (register/verify/resend/login/refresh/
+  logout/JWKS), health probes, and — when enabled — API docs. The search
+  endpoints, WebSocket handshake and every `/api/**` business endpoint require
+  a valid access token.
+* WebSocket clients authenticate once at STOMP `CONNECT` with a bearer token;
+  `StompAuthChannelInterceptor` verifies the JWT, checks the Redis whitelist and
+  binds the principal to the session.
 * CORS is an explicit allow-list from `sondhan.cors.allowed-origins`; wildcard
-  origins are rejected at startup.
+  origins are rejected at startup. `X-Forwarded-For` is only trusted from the
+  private/loopback proxy regex in `app.proxy.trusted-ip-regex`.
 * CSRF is disabled because the API is stateless and uses bearer tokens, not
   browser-managed session cookies.
+* `IpRateLimitFilter` applies a coarse per-IP request budget before the auth
+  filters run, and the auth service applies per-identifier failure budgets
+  (below).
 
 Brute-force controls:
 
@@ -366,6 +484,14 @@ Brute-force controls:
 | OTP verification failures | Same failure budget, scoped by purpose |
 | OTP requests | 10 per hour per phone and per email |
 | OTP verification lockout | 5 wrong attempts set an account lockout for 15 minutes |
+| Per-IP budget | `IpRateLimitFilter` rejects bursts above `app.rate-limit.*` before auth |
+| OTP storage | Server-side HMAC (`OTP_HASH_KEY`) plus a per-code random salt; plaintext never stored |
+| Anti-enumeration | Register, resend and login return the same response whether or not the identifier exists |
+
+Registration, OTP resend and login are deliberately **anti-enumeration**: an
+unknown email/phone gets the same status, body shape and timing profile as a
+known one, with a dummy BCrypt comparison on the login path. Only server-side
+audit records distinguish the cases.
 
 ---
 
@@ -384,7 +510,7 @@ flowchart LR
     user --> events["Kafka events<br/>token ids only"]
     events --> es[(Elasticsearch<br/>token ids only)]
     user --> decrypt["PiiService.decrypt<br/>only for delivery"]
-    decrypt --> mail["OTP / donor alert email"]
+    decrypt --> mail["OTP / digest / admin alert email"]
 ```
 
 Rules:
@@ -419,6 +545,8 @@ Topics are derived from `KafkaTopics` and versioned by `kafka.topic.version`
 | `user.registered` | `user.registered.V2` | `user.registered.retry.V2` | `user.registered.dlq.V2` |
 | `user.updated` | `user.updated.V2` | `user.updated.retry.V2` | `user.updated.dlq.V2` |
 | `user.geo.enriched` | `user.geo.enriched.V2` | `user.geo.enriched.retry.V2` | `user.geo.enriched.dlq.V2` |
+| `user.location.updated` | `user.location.updated.V2` | `user.location.updated.retry.V2` | `user.location.updated.dlq.V2` |
+| `chat.message.sent` | `chat.message.sent.V2` | `chat.message.sent.retry.V2` | `chat.message.sent.dlq.V2` |
 | `email.notification` | `email.notification.V2` | `email.notification.retry.V2` | `email.notification.dlq.V2` |
 
 `BaseEvent` carries `eventId`, `topicName`, `eventType`, `eventTimeStamp`,
@@ -691,6 +819,137 @@ design that is **not connected to a controller**:
 Treat these as **planned capabilities**, not part of the current runtime
 contract, until an endpoint and index bootstrap are wired.
 
+### 11.4 Request accept and realtime chat
+
+`POST /api/blood-request/{id}/accept` is **first-donor-wins**. A conditional
+`UPDATE ... WHERE status = 'PENDING'` claims the request and records the
+accepted donor; the loser gets `REQUEST_ALREADY_ACCEPTED`. The winner gets a
+single private `chat` row (idempotent: an existing chat for the request is
+reused), and the requester gets an in-app notification plus a realtime badge
+push. No email is sent at accept time.
+
+Messages are **REST-first**: `POST /api/chat/{chatId}/messages` persists the
+message, enforces participant-only access, applies a per-user Redis send rate
+limit, then publishes `chat.message.sent.V2`. The consumer turns the message
+into a recipient notification and the origin node pushes it over STOMP.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant D as Donor
+    participant A as API node A
+    participant DB as PostgreSQL
+    participant K as Kafka
+    participant R as Redis pub/sub
+    participant B as API node B
+    participant C as Requester
+
+    D->>A: POST /api/blood-request/{id}/accept
+    A->>DB: UPDATE ... WHERE status='PENDING' (atomic)
+    A->>DB: INSERT chat (or reuse existing)
+    A->>DB: INSERT notification (requester)
+    A-->>D: 200 + chat id + donor name
+    Note over A: after commit: local STOMP push +<br/>redis fanout envelope
+
+    D->>A: POST /api/chat/{chatId}/messages
+    A->>DB: INSERT chat_message
+    A->>K: publish chat.message.sent.V2 after commit
+    A->>R: publish FanoutEnvelope
+    R-->>B: envelope
+    B->>C: STOMP /user/queue/chat
+```
+
+Delivery is **at-least-once** and never depends on the sender and receiver
+sharing a node. `ChatPushService` publishes a `FanoutEnvelope` (recipient id,
+destination, pre-serialized payload) to `sondhan:ws:fanout`; every node
+subscribes and attempts local delivery, which is a no-op where the user is not
+connected. Presence is tracked in Redis (`ws:presence:<userId>`) with a short
+TTL. Clients recover missed messages by keyset backfill over REST (`after`
+cursor), so a dropped WS frame is not data loss. Delivery is triggered from
+`afterCommit`, so a recipient can never receive a message that later rolls back.
+
+### 11.5 Notification center and daily digest
+
+Every product event (chat message, request accepted, urgent alert, donation
+state change) writes a `notification` row and pushes the new badge/feed entry
+over `/user/queue/notifications`. The REST feed and unread count are keyset
+paginated. Notifications are the **single source of truth** for in-app activity.
+
+Email is deliberately decoupled from individual events. `NotificationDigestWorker`
+runs daily, selects users with unread, undigested notifications older than
+`app.notification.digest.min-age-hours`, sends one summary email through the
+transactional outbox (`EmailNotificationType.DIGEST`), and stamps
+`email_digest_at`. Keyset pagination over `recipient_id` plus a per-user
+cooldown (`cooldown-hours`) makes the sweep resumable and prevents duplicate
+digests across retries or multiple instances (ShedLock). The worker is the only
+producer of product-event email.
+
+Mobile push (FCM) is optional. `FcmPushSender` resolves the recipient's device
+tokens and dispatches asynchronously on a **bounded** thread pool with a
+`DiscardOldestPolicy`, so a push burst can never block a business thread or
+grow memory without limit. Invalid/unregistered tokens reported by FCM are
+deleted.
+
+### 11.6 Document service
+
+Profile photos and medical reports are stored in **MinIO** (S3-compatible),
+never on the application node. The API records metadata (`bucket`, `object_key`,
+`checksum_sha256`, `verification_status`) in `document` and issues short-lived
+presigned URLs on demand. Uploads are size/type validated and hashed; deletes
+remove both the row and the object. Buckets are created idempotently at startup
+(`StorageBucketInitializer`, best-effort) and by the one-shot `minio-init`
+Compose service in deployment. Download filenames are sanitized before being
+placed into the presigned `response-content-disposition` header. A MinIO outage
+fails only document operations; the rest of the API remains available.
+
+### 11.7 Donation completion
+
+A donation moves through an explicit, conditional state machine so concurrent
+callers cannot double-count:
+
+```mermaid
+stateDiagram-v2
+    [*] --> ACCEPTED: donor accepts request
+    ACCEPTED --> PENDING_APPROVAL: donor marks complete
+    PENDING_APPROVAL --> COMPLETED: requester approves (+ optional 1–5 rating)
+    PENDING_APPROVAL --> DISPUTED: requester disputes with reason
+    PENDING_APPROVAL --> COMPLETED: 3-day auto-confirm (no rating)
+    DISPUTED --> COMPLETED: admin resolves as approved
+    DISPUTED --> CANCELLED: admin resolves as rejected
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+```
+
+Approval applies a race-safe running-average rating (`rating` and `ratingCount`
+updated in one JPQL `SET` evaluated against the pre-update row) and increments
+`totalDonations` / `lastDonationDate`. Each `donation_record` is unique per
+request. `DonationCompletionWorker` auto-confirms stale `PENDING_APPROVAL`
+records after `app.donation.auto-approve-days` (default 3) without applying a
+rating, so a donor is never held hostage by an unresponsive requester. Every
+transition is a conditional update, making workers and retries idempotent.
+
+### 11.8 Urgent escalation and location freshness
+
+Urgent requests escalate to ever-wider donor rings until they are accepted or
+expire. `RequestEscalationWorker` (ShedLock) reads the configured ladder
+(`app.escalation.*`), calls the nearby search at each radius, excludes donors
+already alerted (`alertedUserIds`), sends notifications, and advances the
+request's `escalationLevel`. Requests also carry an urgency-driven `expiresAt`
+TTL; `expireStaleRequests` closes them atomically.
+
+Freshness is part of the contract:
+
+* Clients publish location via `POST /api/user/location`; `LocationIngestServiceImpl`
+  throttles per user, writes `geoLocation` + `geoUpdatedAt`, and publishes
+  `user.location.updated.V2` after commit. The handler re-applies the row
+  (idempotent replay) and updates the Elasticsearch geo fields.
+* Nearby and escalation search ignore donors whose `geoUpdatedAt` is older than
+  `app.location.staleness-threshold-days`, so an old city centroid is never
+  presented as a live position.
+* `LocationStalenessWorker` nudges donors with stale locations
+  (`geoReconfirmRequestedAt`, `reconfirm-cooldown-days`) and marks them for
+  reconfirmation rather than silently trusting stale coordinates.
+
 ---
 
 ## 12. Audit logging
@@ -732,6 +991,12 @@ Implementation notes:
 | Concurrent outbox relays | `FOR UPDATE SKIP LOCKED` |
 | Geo claim races | Conditional `UPDATE ... WHERE geo_status = 'PENDING'` |
 | Geocoder outages | Bounded retries, `FAILED` after 5 attempts, Redis cache for successful cities |
+| Concurrent accept / donation transitions | Conditional `UPDATE ... WHERE status = <expected>`; loser gets a domain error, workers are idempotent |
+| WebSocket delivery | Redis pub/sub fanout after commit; at-least-once, with REST keyset backfill for missed frames |
+| Push bursts | Bounded executor + `DiscardOldestPolicy`; invalid tokens pruned |
+| Digest duplication | Keyset pagination + per-user cooldown + `email_digest_at` stamp + ShedLock |
+| Worker repository writes | `@Modifying` repository methods are `@Transactional`, so they run atomically when invoked from a thread with no ambient transaction |
+| MinIO outage | Document endpoints fail with a normalized storage error; API startup and other features stay available |
 | Graceful shutdown | `server.shutdown=graceful`, 30 s lifecycle timeout, 45 s container stop grace |
 | Elasticsearch outage | Indexing fails, the event is retried three times, then skipped; PostgreSQL remains authoritative and the index must be rebuilt manually |
 
@@ -757,7 +1022,14 @@ until the event is replayed or the index is rebuilt manually.
 | Geocoding | `geo.fetch.lat.long.url`, `geo.enrichment.poll-interval`, `default.geo.search.radius` |
 | JWT | `JWT_ACCESS_TOKEN_VALIDITY`, `JWT_REFRESH_TOKEN_VALIDITY`, `JWT_ISSUER`, `RSA_PRIVATE_KEY_PATH`, `RSA_PUBLIC_KEY_PATH` |
 | PII / OTP | `PII_ENCRYPTION_KEY`, `PII_HASH_KEY`, `OTP_HASH_KEY` |
-| Auth limits | `AUTH_FAILURE_MAX_ATTEMPTS`, `AUTH_FAILURE_WINDOW_MINUTES` |
+| Auth limits | `AUTH_FAILURE_MAX_ATTEMPTS`, `AUTH_FAILURE_WINDOW_MINUTES`, `app.rate-limit.*` |
+| Storage (MinIO) | `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_REGION`, `app.storage.ensure-buckets`, `app.storage.presign-expiry-seconds`, `app.storage.max-upload-bytes` |
+| Push (FCM) | `app.push.enabled`, `GOOGLE_APPLICATION_CREDENTIALS` / `app.push.firebase-credentials`, `app.push.*` |
+| Chat / WS | `app.chat.send.rate-limit-per-minute`, `app.chat.presence.ttl-seconds`, `app.ws.*` allowed origins |
+| Location | `app.location.update.min-interval-seconds`, `app.location.staleness-threshold-days`, `geo.staleness.*`, `app.location-reconfirm.url` |
+| Escalation | `app.escalation.*` ladder and cadence, urgency-driven request TTLs |
+| Donations | `app.donation.auto-approve-days`, `app.donation.auto-approve.cron`, `app.donation.auto-approve.max-per-run` |
+| Digest | `app.notification.digest.cron`, `min-age-hours`, `cooldown-hours`, `batch-size`, `max-per-run`, `items-per-email` |
 | CORS | `sondhan.cors.allowed-origins` / `CORS_ORIGIN_1..3` |
 | Mail | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` |
 | Actuator | `health,info` exposed; liveness/readiness probe groups enabled |
@@ -775,56 +1047,59 @@ These are deliberate notes so the architecture does not overstate what is
 implemented:
 
 1. **`user.updated` has no handler.** `UserEventConsumer` subscribes to it, but
-   only `UserRegisteredEventHandler` and `GeoEnrichedEventHandler` are
-   registered. An update event fails dispatch, is retried three times by the
-   generic listener error handler, then is logged and skipped. There is no
-   handler-level DLQ for this consumer.
+   only the registered, geo-enriched, location-updated and chat-message
+   handlers are registered. An update event fails dispatch, is retried three
+   times by the generic listener error handler, then is logged and skipped.
+   There is no handler-level DLQ for this consumer.
 2. **Redis GEO search is not wired.** `RedisGeoSearchService` and
-   `RadiusExpander` have no callers. The active donor search is SQL + Haversine
-   in `DonorSearchServiceImpl`.
-3. **Elasticsearch geo-distance search is commented out.**
-4. **Donor-list Kafka path is legacy.** `DonorListPublisher` is unused and its
+   `RadiusExpander` have no callers. The active nearby search is the
+   Elasticsearch geo-distance path in
+   `UserElasticSearchCustomRepositoryImpl`; the eligible-donor path is still
+   SQL + Haversine in `DonorSearchServiceImpl`.
+3. **Donor-list Kafka path is legacy.** `DonorListPublisher` is unused and its
    topic (`blood-donor-notification`) differs from the consumer topic
    (`blood-donor-notifications`). The active notification path goes directly
    through `NotificationManager` to the outbox.
-5. **Eligibility filter is incomplete.** `DonorUtils.minGapDays` is a static
+4. **Eligibility filter is incomplete.** `DonorUtils.minGapDays` is a static
    field annotated with `@Value`; Spring does not inject static fields, so the
    cutoff behaves as zero days. The filter also ignores `isAvailable` and
    `isVerified`.
-6. **Role naming drift.** Migrations seed `ROLE_SYSTEM_ADMIN`, while URL and
-   method security reference `SUPER_ADMIN` (which maps to `ROLE_SUPER_ADMIN`).
-   The seeded system-admin role will not satisfy those checks until the names
-   are reconciled.
-7. **Blood-request geo enrichment is not implemented.** Columns exist, but no
-   worker processes `blood_request` rows.
-8. **Two Elasticsearch models share `registered_donors`.** The read model is
+5. **Blood-request geo enrichment is not implemented.** `blood_request` now has
+   the same freshness columns as `app_user` (V42), but no worker claims or
+   enriches request rows; escalation relies on the requester-supplied
+   coordinates.
+6. **Two Elasticsearch models share `registered_donors`.** The read model is
    `RegisteredDonorDocument`; the admin API uses `DonorSearchDocument`. The
    admin paginated repository points at `donor_search_index` while the
    document annotation points at `registered_donors`; verify index alignment
    before relying on admin search.
-9. **JWT keys are ephemeral without explicit paths.** In development, a
+7. **JWT keys are ephemeral without explicit paths.** In development, a
    temporary RSA key pair is generated, so tokens do not survive a restart and
-   are not shared across instances. Production must mount a stable key pair.
-   There is no `kid`-based key rotation yet.
-10. **No audit retention job.** Audit partitions and retention are operational
-    tasks; the default partition exists but old partitions are not dropped
-    automatically.
-11. **Spring Session is present but unused for authentication.** The
-    dependency is declared, but no session store is configured; the security
-    filter chain is `STATELESS` and no Spring Session filter is enabled, so
-    sessions are not part of the auth path.
-12. **Flyway validation is disabled** (`validate-on-migrate=false`) pending
+   are not shared across instances. Keys are loaded filesystem-first when
+   `RSA_PRIVATE_KEY_PATH`/`RSA_PUBLIC_KEY_PATH` are set. Production must mount
+   a stable key pair. There is no `kid`-based key rotation yet.
+8. **No audit retention job.** Audit partitions and retention are operational
+   tasks; the default partition exists but old partitions are not dropped
+   automatically.
+9. **Spring Session is present but unused for authentication.** The
+   dependency is declared, but no session store is configured; the security
+   filter chain is `STATELESS` and no Spring Session filter is enabled, so
+   sessions are not part of the auth path.
+10. **Flyway validation is disabled** (`validate-on-migrate=false`) pending
     environment baselining. Enable it when all environments have a clean
     history.
-13. **No request-ID propagation.** Logback includes a `requestId` MDC field,
+11. **No request-ID propagation.** Logback includes a `requestId` MDC field,
     but no servlet filter or client-context builder populates it, so log lines
     cannot currently be correlated to a request.
-14. **No stale-claim recovery for geo enrichment.** A row left in `PROCESSING`
+12. **No stale-claim recovery for geo enrichment.** A row left in `PROCESSING`
     by a crash or a failed event publish is not swept back to `PENDING`; only
     `app_user` rows in `PENDING` are picked up by the worker.
-15. **No automated Elasticsearch reindex job.** The read model can be rebuilt
+13. **No automated Elasticsearch reindex job.** The read model can be rebuilt
     from PostgreSQL, but recovery currently requires a manual replay or
     bulk-index operation.
+14. **Single-node WebSocket fanout.** Redis pub/sub gives cross-node delivery,
+    but there is no durable queue for offline clients; users recover through
+    REST backfill when they reconnect.
 
 ---
 
@@ -866,3 +1141,10 @@ Recommended style:
 | 2026-11-15 | Initial architecture document: context, containers, domain model, APIs, auth, PII, event flows, outbox, search, geo enrichment, audit, reliability, gaps | `docs/architecture.md` |
 | 2026-11-15 | Documented the geo-enrichment handler transaction boundary; the `@Modifying` geo update now runs inside `GeoEnrichedEventHandler.handle(...)`, with the idempotency marker in a separate `REQUIRES_NEW` transaction | §9.2, `GeoEnrichedEventHandler` |
 | 2026-11-15 | Adopted Compose project `sondhan` and migrated existing dev data into `sondhan_*` volumes; pinned PostgreSQL to the Debian `postgres:15` image for collation compatibility; fixed the Redis service anchor and Elasticsearch log-index replicas | `docs/container-deployment.md` |
+| 2026-11-15 | Added RBAC (`ROLE_DONOR`/`ROLE_ORG_ADMIN`/`ROLE_SYSTEM_ADMIN`), per-IP rate limiting, OTP salting, anti-enumeration and principal-bound writes | §5, §6 |
+| 2026-11-15 | Added accept-first-donor-wins + private chat with REST persistence and Redis-fanout STOMP delivery | §5, §11.4 |
+| 2026-11-15 | Added notification center, realtime badge push, optional FCM push and the daily digest email worker | §5, §11.5 |
+| 2026-11-15 | Added MinIO document service with presigned URLs; added MinIO/`minio-init` to Compose | §11.6, `docs/container-deployment.md` |
+| 2026-11-15 | Added donation completion state machine with rating and 3-day auto-confirm | §11.7 |
+| 2026-11-15 | Added `search_after` pagination, expanding-radius nearby search, urgent escalation ladder and location freshness/staleness pipeline | §11.1, §11.8 |
+| 2026-11-15 | Added `user.location.updated` and `chat.message.sent` topics; documented new reliability and configuration entries | §8, §13, §14 |
