@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,6 +33,8 @@ public class NotificationManagerImpl implements NotificationManager {
     private String orgName;
     @Value("${app.email.from}")
     private String orgEmail;
+    @Value("${app.url:https://sondhan.app}")
+    private String appUrl;
 
     public NotificationManagerImpl(EmailOutboxPublisher emailOutboxPublisher,
                                    PiiService piiService) {
@@ -103,5 +106,36 @@ public class NotificationManagerImpl implements NotificationManager {
                     mailRequest, EmailNotificationType.DONOR_ALERT, donor.getId());
             log.debug("Queued donor alert for userId={}, eventId={}", donor.getId(), eventId);
         }
+    }
+
+    @Override
+    @Transactional
+    public boolean notifyDigestEmail(User recipient, List<String> items) {
+        String email;
+        try {
+            email = piiService.decryptEmail(recipient);
+        } catch (IllegalStateException e) {
+            log.warn("Cannot send digest for userId={} — no email token: {}",
+                    recipient.getId(), e.getMessage());
+            return false;
+        }
+        if (!MailUtils.isValidEmail(email)) {
+            log.warn("Cannot send digest for userId={} — no valid email", recipient.getId());
+            return false;
+        }
+
+        String subject = orgName + ": you have " + items.size() + " unread notification"
+                + (items.size() == 1 ? "" : "s");
+        String body = MailUtils.buildHtmlBodyForDigest(
+                recipient.getFirstName(), orgName, items, appUrl);
+        SendMailRequest mailRequest = SendMailRequest.of(
+                Collections.singletonList(email), orgEmail, subject, body);
+        mailRequest.setHtmlContent(true);
+
+        String eventId = emailOutboxPublisher.enqueue(
+                mailRequest, EmailNotificationType.DIGEST, recipient.getId());
+        log.debug("Queued daily digest for userId={}, items={}, eventId={}",
+                recipient.getId(), items.size(), eventId);
+        return true;
     }
 }

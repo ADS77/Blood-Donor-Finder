@@ -16,6 +16,75 @@ public class MailUtils {
                 .matches();
     }
 
+    /**
+     * Renders the daily notification digest. Items are plain text and are
+     * HTML-escaped before interpolation.
+     */
+    public static String buildHtmlBodyForDigest(String recipientName,
+                                                String organizationName,
+                                                java.util.List<String> items,
+                                                String appUrl) {
+        StringBuilder rows = new StringBuilder();
+        for (String item : items) {
+            rows.append("    <tr><td style=\"padding:10px 16px;border-bottom:1px solid #f0f0f0;")
+                .append("font-size:14px;line-height:1.5;color:#333333;\">")
+                .append(safeHtml(item, ""))
+                .append("</td></tr>\n");
+        }
+        return """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Your daily notifications</title>
+                </head>
+                <body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,Helvetica,sans-serif;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                       style="background:#f4f6f9;padding:40px 0;">
+                    <tr>
+                        <td align="center">
+                            <table role="presentation" width="600" cellspacing="0" cellpadding="0"
+                                   style="background:#ffffff;border-radius:10px;overflow:hidden;
+                                          box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+                                <tr>
+                                    <td align="center" style="background:#c62828;padding:28px;color:#ffffff;">
+                                        <h1 style="margin:0;font-size:26px;">%s</h1>
+                                        <p style="margin-top:8px;font-size:15px;color:#f5f5f5;">
+                                            Your daily notifications
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:24px 40px 8px 40px;">
+                                        <p style="margin:0 0 8px;font-size:15px;color:#555555;">Hi %s,</p>
+                                        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#555555;">
+                                            Here is what you missed:
+                                        </p>
+                                    </td>
+                                </tr>
+                """ + rows + """
+                                <tr>
+                                    <td style="padding:16px 40px 32px 40px;">
+                                        <p style="margin:0 0 8px;font-size:15px;color:#555555;">
+                                            <a href="%s" style="color:#c62828;">Open the app</a> to read and reply.
+                                        </p>
+                                        <p style="margin:0;font-size:15px;color:#555555;">Team %s</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                </body>
+                </html>
+                """.formatted(
+                safeHtml(organizationName, "Team Sondhan"),
+                safeHtml(recipientName, "there"),
+                safeHtml(appUrl, "https://sondhan.app"),
+                safeHtml(organizationName, "Team Sondhan"));
+    }
+
     public static String buildHtmlBodyForPingMsg(String recipientName, String geoLocation, String phoneNumber, String organizationName) {
             return String.format("""
             <p>Dear %s,</p>

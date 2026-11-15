@@ -8,5 +8,6 @@ package com.bd.blooddonorfinder.model.enums;
 public enum EmailNotificationType {
     OTP,
     DONOR_ALERT,
+    DIGEST,
     GENERAL
 }
