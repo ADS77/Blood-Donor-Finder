@@ -15,9 +15,11 @@ import com.bd.blooddonorfinder.payload.response.ListResponse;
 import com.bd.blooddonorfinder.model.es.QueryModel.UserQueryModel;
 import com.bd.blooddonorfinder.model.es.SearchParam.GeoDonorSearchParams;
 import com.bd.blooddonorfinder.model.es.SearchParam.UserSearchParams;
+import com.bd.blooddonorfinder.model.es.Location;
 import com.bd.blooddonorfinder.model.es.documents.DonorSearchDocument;
 import com.bd.blooddonorfinder.repository.es.UserElasticSearchCustomRepository;
 import com.bd.blooddonorfinder.utils.constants.ElasticIndexes;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.validation.constraints.NotNull;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Component
@@ -44,6 +47,10 @@ public class UserElasticSearchCustomRepositoryImpl implements UserElasticSearchC
 
     private static final String GEO_LOCATION_FIELD = "location";
     private static final String GEO_UPDATED_AT_FIELD = "geoUpdatedAt";
+    // Stable, unique tie-break for search_after pagination. Elasticsearch 8
+    // forbids sorting on the internal _id field unless cluster-wide id
+    // fielddata is enabled, so we sort on the document's keyword sub-field.
+    private static final String TIE_BREAK_FIELD = "id.keyword";
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
@@ -140,18 +147,18 @@ public class UserElasticSearchCustomRepositoryImpl implements UserElasticSearchC
                 .size(size);
 
         if (geoCenter != null) {
-            // nearest donors first, stable tie-break by _id for search_after pagination
+            // nearest donors first, stable tie-break for search_after pagination
             searchBuilder
                     .sort(s -> s.geoDistance(g -> g
                             .field(GEO_LOCATION_FIELD)
                             .location(loc -> loc.latlon(ll -> ll.lat(geoCenter[0]).lon(geoCenter[1])))
                             .unit(DistanceUnit.Kilometers)
                             .order(SortOrder.Asc)))
-                    .sort(s -> s.field(f -> f.field("_id").order(SortOrder.Asc)));
+                    .sort(s -> s.field(f -> f.field(TIE_BREAK_FIELD).order(SortOrder.Asc)));
         } else {
             searchBuilder
                     .sort(s -> s.score(sc -> sc.order(SortOrder.Desc)))
-                    .sort(s -> s.field(f -> f.field("_id").order(SortOrder.Asc)));
+                    .sort(s -> s.field(f -> f.field(TIE_BREAK_FIELD).order(SortOrder.Asc)));
         }
 
         if (ArrayUtils.isNotEmpty(searchParams.getSearchAfter())) {
@@ -182,6 +189,7 @@ public class UserElasticSearchCustomRepositoryImpl implements UserElasticSearchC
             for (Hit<ObjectNode> hit : hits) {
                 if (hit.source() != null) {
                     DonorSearchDocument userDoc = objectMapper.convertValue(hit.source(), DonorSearchDocument.class);
+                    backfillLocationFromSource(hit.source(), userDoc == null ? null : userDoc.getLocation());
                     userList.add(userDoc);
                 }
             }
@@ -203,6 +211,29 @@ public class UserElasticSearchCustomRepositoryImpl implements UserElasticSearchC
         } catch (IOException e) {
             log.error("Error while searching users from elasticsearch", e);
             throw new ElasticSearchOperationException("Failed to search donors from Elasticsearch", e);
+        }
+    }
+
+    /**
+     * The registered-donors index keeps city/district/zipcode at the top level of
+     * the document (see RegisteredDonorDocument) while the search response nests
+     * them inside Location. Copy the top-level address fields across so responses
+     * keep the documented shape instead of silently losing them.
+     */
+    static void backfillLocationFromSource(JsonNode source, Location location) {
+        if (location == null || source == null || !source.isObject()) {
+            return;
+        }
+        copyIfBlank(source, "city", location.getCity(), location::setCity);
+        copyIfBlank(source, "district", location.getDistrict(), location::setDistrict);
+        copyIfBlank(source, "zipcode", location.getZipcode(), location::setZipcode);
+    }
+
+    private static void copyIfBlank(JsonNode source, String field, String current,
+                                    Consumer<String> setter) {
+        JsonNode value = source.get(field);
+        if (value != null && value.isTextual() && (current == null || current.isBlank())) {
+            setter.accept(value.asText());
         }
     }
 
