@@ -99,6 +99,12 @@ public class ChatServiceImpl implements ChatService {
             throw new AuthException(ErrorCode.REQUEST_ALREADY_ACCEPTED,
                     "This request has already been accepted by another donor");
         }
+        // The bulk update bypasses the persistence context; mutating the managed
+        // entity below (acceptedDonor) would make Hibernate flush a full-row
+        // UPDATE carrying the stale status=PENDING, silently reverting the
+        // transition. Mirror the bulk update onto the managed copy so the flush
+        // rewrites the same state instead of clobbering it.
+        request.setStatus(RequestStatus.ACCEPTED);
         request.setAcceptedDonor(donor);
         request.setAcceptedAt(Instant.now());
 
