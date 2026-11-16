@@ -225,13 +225,20 @@ public class ChatServiceImpl implements ChatService {
         Chat chat = requireParticipant(chatId, callerId);
         LocalDateTime readAt = LocalDateTime.now();
         int updated = chatMessageRepository.markAllRead(chat.getId(), callerId, readAt);
-        UUID counterpartId = chat.getRequester().getId().equals(callerId)
-                ? chat.getDonor().getId() : chat.getRequester().getId();
-        if (updated > 0) {
+        // keep the notification badge coherent: reading the chat clears its
+        // CHAT_MESSAGE notifications, so /notifications/unread-count has one
+        // unambiguous meaning (see NotificationService.markChatMessagesRead)
+        int clearedNotifications = notificationService.markChatMessagesRead(callerId, chat.getId());
+        if (updated > 0 || clearedNotifications > 0) {
             // read receipt to the sender
-            pushService.pushAfterCommit(counterpartId, CHAT_EVENTS_DESTINATION,
+            pushService.pushAfterCommit(counterpartId(chat, callerId), CHAT_EVENTS_DESTINATION,
                     new ChatEventPayload("MESSAGES_READ", chat.getId()));
         }
+    }
+
+    private UUID counterpartId(Chat chat, UUID callerId) {
+        return chat.getRequester().getId().equals(callerId)
+                ? chat.getDonor().getId() : chat.getRequester().getId();
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────

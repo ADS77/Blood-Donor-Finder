@@ -33,4 +33,10 @@ public interface NotificationService {
 
     /** Marks everything read; returns the number of updated rows. */
     int markAllRead(UUID userId);
+
+    /**
+     * Marks the CHAT_MESSAGE notifications for one chat read so that chat
+     * reads and the notification unread badge stay consistent.
+     */
+    int markChatMessagesRead(UUID userId, UUID chatId);
 }

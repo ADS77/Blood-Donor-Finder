@@ -44,12 +44,31 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     long countUnread(@Param("userId") UUID userId);
 
     @Transactional
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("""
            UPDATE Notification n SET n.readAt = :readAt
            WHERE n.recipient.id = :userId AND n.readAt IS NULL
            """)
     int markAllRead(@Param("userId") UUID userId, @Param("readAt") LocalDateTime readAt);
+
+    /**
+     * Marks the CHAT_MESSAGE notifications for one chat as read. Reading the
+     * chat in the client clears the badge for its messages; lifecycle
+     * notifications (request accepted, donation completed, ...) still require
+     * the explicit notification read endpoints.
+     */
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query("""
+           UPDATE Notification n SET n.readAt = :readAt
+           WHERE n.recipient.id = :userId
+             AND n.referenceId = :chatId
+             AND n.type = com.bd.blooddonorfinder.model.enums.NotificationType.CHAT_MESSAGE
+             AND n.readAt IS NULL
+           """)
+    int markChatMessagesRead(@Param("userId") UUID userId,
+                             @Param("chatId") UUID chatId,
+                             @Param("readAt") LocalDateTime readAt);
 
     // ── digest worker ───────────────────────────────────────────────────
 

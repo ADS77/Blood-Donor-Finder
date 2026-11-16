@@ -116,6 +116,16 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationRepository.markAllRead(userId, LocalDateTime.now());
     }
 
+    /**
+     * Marks the CHAT_MESSAGE notifications for one chat read. Called from the
+     * chat read endpoint so the unread badge has a single source of truth: a
+     * chat is read exactly when its chat-message notifications are read.
+     */
+    @Override
+    public int markChatMessagesRead(UUID userId, UUID chatId) {
+        return notificationRepository.markChatMessagesRead(userId, chatId, LocalDateTime.now());
+    }
+
     private NotificationDto toDto(Notification notification) {
         return new NotificationDto(
                 notification.getId(),
