@@ -1148,3 +1148,4 @@ Recommended style:
 | 2026-11-15 | Added donation completion state machine with rating and 3-day auto-confirm | §11.7 |
 | 2026-11-15 | Added `search_after` pagination, expanding-radius nearby search, urgent escalation ladder and location freshness/staleness pipeline | §11.1, §11.8 |
 | 2026-11-15 | Added `user.location.updated` and `chat.message.sent` topics; documented new reliability and configuration entries | §8, §13, §14 |
+| 2026-11-16 | Added explicit Spring `dev`/`prod` profiles (`dev` is the default) and a fixed dev OTP (`sondhan.otp.dev-fixed-code`, `123456` in dev only; pinned empty in prod) so registration smoke tests complete without outbox access | `docs/container-deployment.md`, `OtpService` |

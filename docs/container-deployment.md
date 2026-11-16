@@ -106,6 +106,26 @@ Notes specific to development:
 * The application container overrides `DB_URL`, `KAFKA_BOOTSTRAP_SERVERS`,
   `ELASTICSEARCH_*` and `REDIS_CLUSTER_NODES` with Compose service names. Values
   in `.env` are host-oriented and are used when the app runs outside Docker.
+* Spring profiles: the dev stack sets `SPRING_PROFILES_ACTIVE=dev`
+  (`application-dev.properties`), the production stack sets `prod`
+  (`application-prod.properties`). `dev` is also the default profile, so an IDE
+  run without environment variables behaves like the dev stack.
+* **Fixed dev OTP**: in the `dev` profile every OTP verification also accepts
+  the code `123456` (`sondhan.otp.dev-fixed-code`), as long as an OTP was
+  actually issued (register/resend flow). Registration smoke tests therefore
+  need no database or outbox access: `POST /api/auth/register` →
+  `POST /api/auth/verify-otp` with `{"user_id": ..., "otp": "123456",
+  "purpose": "REGISTER"}` returns the token pair. The `prod` profile pins the
+  key to empty; never set it in a shared environment.
+* Local test accounts (dev only):
+  - donor: `aunkurdas1111@gmail.com` / `00123456789`, password `DevTest!2026`
+    (register + verify with OTP `123456`; gets `ROLE_DONOR` automatically);
+  - requester: `smoke.requester.p0@example.com`, password `SmokeP0!pass2`;
+  - donor: `smoke.test.p0@example.com`, password `SmokeP0!pass`
+    (both seeded via SQL from earlier smoke sessions).
+  The anti-enumeration guard replies to a *duplicate* registration with a
+  decoy `user_id` and sends no OTP — if verification then fails with
+  "No active OTP found", the email/phone already exists; log in instead.
 * The Redis cluster nodes advertise their Compose service names
   (`redis-1:6379`, …) so cluster redirections work from the app container. The
   host-based cluster from `Docker/setup-redis-cluster.sh` advertises
