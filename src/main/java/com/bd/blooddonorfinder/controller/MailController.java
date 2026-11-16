@@ -1,5 +1,6 @@
 package com.bd.blooddonorfinder.controller;
 
+import com.bd.blooddonorfinder.kafka.outbox.EmailOutboxRelayService;
 import com.bd.blooddonorfinder.payload.request.SendMailRequest;
 import com.bd.blooddonorfinder.service.MailService;
 import jakarta.validation.Valid;
@@ -20,11 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAnyRole('SYSTEM_ADMIN')")
 public class MailController {
     private final MailService mailService;
+    private final EmailOutboxRelayService outboxRelayService;
     private final String serverFromAddress;
 
     public MailController(MailService mailService,
+                          EmailOutboxRelayService outboxRelayService,
                           @Value("${app.email.from}") String serverFromAddress) {
         this.mailService = mailService;
+        this.outboxRelayService = outboxRelayService;
         this.serverFromAddress = serverFromAddress;
     }
 
@@ -35,5 +39,16 @@ public class MailController {
         sendMailRequest.setMailFrom(serverFromAddress);
         mailService.sendMail(sendMailRequest);
         return ResponseEntity.ok().body("Mail sent");
+    }
+
+    /**
+     * Requeues every FAILED email-outbox row for delivery (fresh attempt
+     * budget). Support action after an SMTP/broker outage; the relay picks
+     * the rows up on its next tick.
+     */
+    @PostMapping("/outbox/replay-failed")
+    public ResponseEntity<String> replayFailedOutbox() {
+        int requeued = outboxRelayService.requeueFailed();
+        return ResponseEntity.ok().body("Requeued " + requeued + " failed email(s)");
     }
 }

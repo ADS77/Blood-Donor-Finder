@@ -142,6 +142,25 @@ public interface EmailOutboxRepository extends JpaRepository<EmailOutboxMessage,
                             @Param("error") String error,
                             @Param("now") Instant now);
 
+    /**
+     * Admin replay: FAILED rows return to PENDING with a fresh attempt
+     * budget. Without the reset the relay would burn its first retry and
+     * immediately park the row as FAILED again (attempts >= maxAttempts).
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE EmailOutboxMessage m
+               SET m.status = :pendingStatus,
+                   m.updatedAt = :now,
+                   m.nextAttemptAt = :now,
+                   m.lockedAt = NULL,
+                   m.attempts = 0
+             WHERE m.status = :failedStatus
+            """)
+    int requeueFailed(@Param("pendingStatus") EmailOutboxStatus pendingStatus,
+                      @Param("failedStatus") EmailOutboxStatus failedStatus,
+                      @Param("now") Instant now);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             DELETE FROM EmailOutboxMessage m

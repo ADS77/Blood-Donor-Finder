@@ -155,6 +155,24 @@ public class EmailOutboxRelayService {
                 cutoff);
     }
 
+    /**
+     * Admin replay: hands every FAILED row back to the relay with a fresh
+     * attempt budget. Used after an outage (SMTP misconfigured, broker down)
+     * so parked mail — OTP emails in particular — can be delivered without
+     * asking users to re-register.
+     */
+    @Transactional
+    public int requeueFailed() {
+        int requeued = repository.requeueFailed(
+                EmailOutboxStatus.PENDING,
+                EmailOutboxStatus.FAILED,
+                Instant.now());
+        if (requeued > 0) {
+            log.info("Admin replay: {} failed email outbox row(s) requeued for delivery", requeued);
+        }
+        return requeued;
+    }
+
     private Duration backoffFor(int attempts) {
         long multiplier = 1L << Math.min(Math.max(attempts - 1, 0), 20);
         Duration delay = initialBackoff.multipliedBy(multiplier);
