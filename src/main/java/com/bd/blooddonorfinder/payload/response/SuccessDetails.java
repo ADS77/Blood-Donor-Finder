@@ -21,7 +21,7 @@ public class SuccessDetails<T> implements Serializable {
 
     public SuccessDetails(T data){
          this.data = data;
-         this.totalCount = 1;
+         this.totalCount = sizeOf(data);
      }
     public SuccessDetails(List<T> listData){
         this.listData = listData;
@@ -31,10 +31,20 @@ public class SuccessDetails<T> implements Serializable {
     public SuccessDetails(T data, String message) {
         this.data = data;
         this.message = message;
+        this.totalCount = sizeOf(data);
     }
     public SuccessDetails(List<T> listData, String message) {
         this.listData = listData;
         this.totalCount = listData.size();
         this.message = message;
+    }
+
+    /**
+     * totalCount is the number of items on this page: the size for list
+     * payloads, 1 for a single object. Callers paginate with keyset cursors,
+     * so this is never the total collection size.
+     */
+    private static int sizeOf(Object data) {
+        return data instanceof java.util.Collection<?> collection ? collection.size() : 1;
     }
 }

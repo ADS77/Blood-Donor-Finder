@@ -1,6 +1,7 @@
 package com.bd.blooddonorfinder.controller;
 
 import com.bd.blooddonorfinder.model.common.User;
+import com.bd.blooddonorfinder.payload.response.DonorSummaryDto;
 import com.bd.blooddonorfinder.model.es.SearchParam.UserSearchParams;
 import com.bd.blooddonorfinder.model.es.documents.DonorSearchDocument;
 import com.bd.blooddonorfinder.payload.request.DonorSearchRequest;
@@ -96,7 +97,7 @@ public class DonorSearchController {
     }
 
     @PostMapping("/eligible-donors")
-    public ResponseEntity<RestApiResponse<ListResponse<User>>> getEligibleDonors(
+    public ResponseEntity<RestApiResponse<ListResponse<DonorSummaryDto>>> getEligibleDonors(
             @Valid @RequestBody DonorSearchRequest donorSearchRequest) {
         // Clamp caller-supplied radius instead of only bumping small values up.
         donorSearchRequest.setRadius(clampRadius(donorSearchRequest.getRadius()));
@@ -107,8 +108,8 @@ public class DonorSearchController {
         // SECURITY: log the count only — donor entities carry PII.
         log.info("Found {} eligible donors (radius={} km)",
                 eligibleDonors.size(), donorSearchRequest.getRadius());
-        ListResponse<User> eligibleDonorList = new ListResponse<>();
-        eligibleDonorList.setData(eligibleDonors);
+        ListResponse<DonorSummaryDto> eligibleDonorList = new ListResponse<>();
+        eligibleDonorList.setData(DonorSummaryDto.fromAll(eligibleDonors));
         eligibleDonorList.setTime(stopWatch.getTotalTimeMillis());
         eligibleDonorList.setCount(eligibleDonors.size());
         return ResponseEntity.ok()
@@ -121,7 +122,7 @@ public class DonorSearchController {
      */
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN','ORG_ADMIN')")
     @PostMapping("/notify-near-by-donors")
-    public ResponseEntity<RestApiResponse<List<User>>> notifyNearByDonorsByEmail(
+    public ResponseEntity<RestApiResponse<String>> notifyNearByDonorsByEmail(
             @Valid @RequestBody DonorSearchRequest donorSearchRequest) {
         donorSearchRequest.setRadius(clampRadius(donorSearchRequest.getRadius()));
         List<User> nearByUserList = donorSearchService.findNearByDonors(donorSearchRequest);
@@ -129,9 +130,8 @@ public class DonorSearchController {
         notificationManager.notifyByMail(eligibleDonors, donorSearchRequest);
         log.debug("Notifying {} eligible donors", eligibleDonors.size());
         return ResponseEntity.ok()
-                .body(RestApiResponse.success(eligibleDonors.size(),
-                        "Notified " + eligibleDonors.size() + " nearby donors",
-                        HttpStatus.OK));
+                .body(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                        "Notified " + eligibleDonors.size() + " nearby donors", (String) null));
     }
 
     private double clampRadius(Double radius) {

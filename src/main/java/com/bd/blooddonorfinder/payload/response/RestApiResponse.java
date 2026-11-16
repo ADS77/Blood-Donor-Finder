@@ -36,8 +36,13 @@ public class RestApiResponse<T>  {
 
     public static <T> RestApiResponse<T> success(T data, String message) {
         RestApiResponse<T> response = new RestApiResponse<>();
-        response.setSuccess(new SuccessDetails<>(data,message));
+        // A list payload must populate the list slot so totalCount reflects the
+        // page size (see SuccessDetails list constructor); a bare object gets
+        // totalCount=1. Every success path also carries statusCode=SUCCESS so
+        // clients can branch on it consistently across endpoints.
+        response.setSuccess(new SuccessDetails<>(data, message));
         response.setStatus(HttpStatus.OK);
+        response.setStatusCode(StatusCode.SUCCESS);
         response.setMessage(message);
         return response;
     }
@@ -47,14 +52,8 @@ public class RestApiResponse<T>  {
         SuccessDetails<T> successDetails = new SuccessDetails<>(listData,message);
         response.setSuccess(successDetails);
         response.setStatus(HttpStatus.OK);
+        response.setStatusCode(StatusCode.SUCCESS);
         response.setMessage(message);
-        return response;
-    }
-
-    public static <T> RestApiResponse<T> success(int totalCount, String message, HttpStatus status){
-        RestApiResponse<T> response = new RestApiResponse<>();
-        response.message = message;
-        response.status = status;
         return response;
     }
 
