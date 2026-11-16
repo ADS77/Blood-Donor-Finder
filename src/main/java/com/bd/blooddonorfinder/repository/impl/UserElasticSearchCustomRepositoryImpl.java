@@ -189,8 +189,10 @@ public class UserElasticSearchCustomRepositoryImpl implements UserElasticSearchC
             for (Hit<ObjectNode> hit : hits) {
                 if (hit.source() != null) {
                     DonorSearchDocument userDoc = objectMapper.convertValue(hit.source(), DonorSearchDocument.class);
-                    backfillLocationFromSource(hit.source(), userDoc == null ? null : userDoc.getLocation());
-                    userList.add(userDoc);
+                    if (userDoc != null) {
+                        backfillFromSource(hit.source(), userDoc);
+                        userList.add(userDoc);
+                    }
                 }
             }
 
@@ -215,24 +217,44 @@ public class UserElasticSearchCustomRepositoryImpl implements UserElasticSearchC
     }
 
     /**
-     * The registered-donors index keeps city/district/zipcode at the top level of
-     * the document (see RegisteredDonorDocument) while the search response nests
-     * them inside Location. Copy the top-level address fields across so responses
-     * keep the documented shape instead of silently losing them.
+     * The registered-donors index is written by RegisteredDonorDocument, whose
+     * shape differs from the search read model: display name lives in the
+     * "username" field and city/district/zipcode sit at the top level while the
+     * response nests them inside Location. Copy those fields across so
+     * responses keep the documented shape instead of silently losing them.
      */
+    static void backfillFromSource(JsonNode source, DonorSearchDocument doc) {
+        if (doc == null || source == null || !source.isObject()) {
+            return;
+        }
+        if (isBlank(doc.getName())) {
+            copyText(source, "username", doc::setName);
+        }
+        backfillLocationFromSource(source, doc.getLocation());
+    }
+
     static void backfillLocationFromSource(JsonNode source, Location location) {
         if (location == null || source == null || !source.isObject()) {
             return;
         }
-        copyIfBlank(source, "city", location.getCity(), location::setCity);
-        copyIfBlank(source, "district", location.getDistrict(), location::setDistrict);
-        copyIfBlank(source, "zipcode", location.getZipcode(), location::setZipcode);
+        if (isBlank(location.getCity())) {
+            copyText(source, "city", location::setCity);
+        }
+        if (isBlank(location.getDistrict())) {
+            copyText(source, "district", location::setDistrict);
+        }
+        if (isBlank(location.getZipcode())) {
+            copyText(source, "zipcode", location::setZipcode);
+        }
     }
 
-    private static void copyIfBlank(JsonNode source, String field, String current,
-                                    Consumer<String> setter) {
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private static void copyText(JsonNode source, String field, Consumer<String> setter) {
         JsonNode value = source.get(field);
-        if (value != null && value.isTextual() && (current == null || current.isBlank())) {
+        if (value != null && value.isTextual() && !value.asText().isBlank()) {
             setter.accept(value.asText());
         }
     }
