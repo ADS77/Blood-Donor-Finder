@@ -59,6 +59,14 @@ public class OtpService {
     @Value("${sondhan.otp.hash-key}")
     private String otpHashKey;
 
+    /**
+     * Fixed OTP accepted for every user while the dev profile is active.
+     * Empty/unset in every other profile, so verification falls through to the
+     * normal salted-hash comparison. Never log the code with real users around.
+     */
+    @Value("${sondhan.otp.dev-fixed-code:}")
+    private String devFixedOtpCode;
+
 
     public OtpService(OtpCodeRepository otpCodeRepository,
                       RedisTemplate<String, Object> redisTemplate,
@@ -100,13 +108,19 @@ public class OtpService {
                 .findActiveOtp(user,purpose,Instant.now())
                 .orElseThrow(() -> noActiveOtpException(user, purpose));
         log.debug("Found active otp code for {}, usedId: {}", purpose, user.getId());
-        // Salted rows are current; null salt is a legacy row created before V33.
-        String submittedHash = otpCode.getSalt() != null
-                ? hashOtp(user, purpose, rawOtp, otpCode.getSalt())
-                : hashOtp(user, purpose, rawOtp);
-        if(!submittedHash.equals(otpCode.getCodeHash())){
-            handleFailedAttempt(user);
-            throw new InvalidOtpException(ErrorCode.INVALID_OTP, "OTP is incorrect");
+
+        if (isDevFixedOtp(rawOtp)) {
+            log.warn("Dev fixed OTP accepted for userId={}, purpose={}. Never enable "
+                    + "sondhan.otp.dev-fixed-code outside development.", user.getId(), purpose);
+        } else {
+            // Salted rows are current; null salt is a legacy row created before V33.
+            String submittedHash = otpCode.getSalt() != null
+                    ? hashOtp(user, purpose, rawOtp, otpCode.getSalt())
+                    : hashOtp(user, purpose, rawOtp);
+            if(!submittedHash.equals(otpCode.getCodeHash())){
+                handleFailedAttempt(user);
+                throw new InvalidOtpException(ErrorCode.INVALID_OTP, "OTP is incorrect");
+            }
         }
         log.debug("Otp verification successful for {}, usedId: {}", purpose, user.getId());
         int update = otpCodeRepository.markAsUsed(otpCode.getId(),Instant.now());
@@ -139,6 +153,16 @@ public class OtpService {
     private String generateOtp() {
         int code = 100_000+secureRandom.nextInt(900_000);
         return String.valueOf(code);
+    }
+
+    /**
+     * True only when a dev fixed code is configured (dev profile) and the
+     * submitted OTP matches it. A missing active OTP still fails beforehand, so
+     * the fixed code cannot be used to bypass the issue step.
+     */
+    private boolean isDevFixedOtp(String rawOtp) {
+        return devFixedOtpCode != null && !devFixedOtpCode.isBlank()
+                && devFixedOtpCode.equals(rawOtp);
     }
 
     private String hashOtp(User user, OtpPurpose purpose, String otp) {

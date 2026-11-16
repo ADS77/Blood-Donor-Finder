@@ -129,6 +129,65 @@ class OtpServiceTest {
         assertEquals(ErrorCode.OTP_ALREADY_USED, exception.getErrorCode());
     }
 
+    @Test
+    void verifyOtp_shouldAcceptDevFixedOtpWhenEnabled() {
+        ReflectionTestUtils.setField(otpService, "devFixedOtpCode", RAW_OTP);
+        // active row was issued for a different code; the fixed code must still win
+        OtpCode activeOtp = activeOtp(hash("999999"));
+        when(otpCodeRepository.findActiveOtp(eq(user), eq(OtpPurpose.REGISTER), any(Instant.class)))
+                .thenReturn(Optional.of(activeOtp));
+        when(otpCodeRepository.markAsUsed(any(), any(Instant.class))).thenReturn(1);
+
+        assertDoesNotThrow(() -> otpService.verifyOtp(user, RAW_OTP, OtpPurpose.REGISTER));
+
+        verify(otpCodeRepository).markAsUsed(eq(activeOtp.getId()), any(Instant.class));
+        verifyNoInteractions(otpFailureTracker);
+    }
+
+    @Test
+    void verifyOtp_shouldIgnoreDevFixedOtpWhenDisabled() {
+        // devFixedOtpCode defaults to empty (prod); RAW_OTP is not the issued code
+        OtpCode activeOtp = activeOtp(hash("999999"));
+        when(otpCodeRepository.findActiveOtp(eq(user), eq(OtpPurpose.REGISTER), any(Instant.class)))
+                .thenReturn(Optional.of(activeOtp));
+
+        InvalidOtpException exception = assertThrows(InvalidOtpException.class,
+                () -> otpService.verifyOtp(user, RAW_OTP, OtpPurpose.REGISTER));
+
+        assertEquals(ErrorCode.INVALID_OTP, exception.getErrorCode());
+        verify(otpFailureTracker).recordFailure(eq(user.getId()), eq(5), any(Instant.class));
+    }
+
+    @Test
+    void verifyOtp_shouldRejectOtherCodesWhenDevFixedOtpEnabled() {
+        ReflectionTestUtils.setField(otpService, "devFixedOtpCode", RAW_OTP);
+        String wrongOtp = "654321";
+        OtpCode activeOtp = activeOtp(hash("999999"));
+        when(otpCodeRepository.findActiveOtp(eq(user), eq(OtpPurpose.REGISTER), any(Instant.class)))
+                .thenReturn(Optional.of(activeOtp));
+
+        InvalidOtpException exception = assertThrows(InvalidOtpException.class,
+                () -> otpService.verifyOtp(user, wrongOtp, OtpPurpose.REGISTER));
+
+        assertEquals(ErrorCode.INVALID_OTP, exception.getErrorCode());
+        verify(otpFailureTracker).recordFailure(eq(user.getId()), eq(5), any(Instant.class));
+    }
+
+    @Test
+    void verifyOtp_devFixedOtpRequiresActiveIssuedOtp() {
+        ReflectionTestUtils.setField(otpService, "devFixedOtpCode", RAW_OTP);
+        when(otpCodeRepository.findActiveOtp(eq(user), eq(OtpPurpose.REGISTER), any(Instant.class)))
+                .thenReturn(Optional.empty());
+        when(otpCodeRepository.findFirstByUserAndPurposeOrderByCreatedAtDesc(
+                user, OtpPurpose.REGISTER)).thenReturn(Optional.empty());
+
+        OtpExpiredException exception = assertThrows(OtpExpiredException.class,
+                () -> otpService.verifyOtp(user, RAW_OTP, OtpPurpose.REGISTER));
+
+        assertEquals(ErrorCode.OTP_EXPIRED, exception.getErrorCode());
+        verifyNoInteractions(otpFailureTracker);
+    }
+
     private OtpCode activeOtp(String codeHash) {
         return OtpCode.of(user, codeHash, OtpPurpose.REGISTER,
                 Instant.now().plusSeconds(180));
