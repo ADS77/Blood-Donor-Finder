@@ -82,8 +82,7 @@ This starts:
 | `elasticsearch` | single node, security disabled | `9200`, `9300` |
 | `redis-1` … `redis-6` | 3 masters + 3 replicas, hostname announcements | none |
 | `redis-cluster-init` | one-shot `redis-cluster create` | none |
-| `minio` | S3-compatible document storage | `127.0.0.1:9000` (API), `127.0.0.1:9001` (console) |
-| `minio-init` | one-shot bucket creation, then exits | none |
+| `minio` | S3-compatible document storage (Bitnami Legacy MinIO package) | `127.0.0.1:9000` (API), `127.0.0.1:9001` (console) |
 
 Optional developer tooling is behind profiles:
 
@@ -123,11 +122,14 @@ Notes specific to development:
   aligned with the data directory, or reindex/dump-restore after switching.
 * MinIO is bound to loopback only and stores objects in the `minio-data` volume.
   The app talks to `http://minio:9000` inside the Compose network and waits for
-  `minio-init` to finish. `minio-init` creates the `sondhan-profile` and
-  `sondhan-medical` buckets idempotently; development defaults are
-  `sondhan-admin` / `sondhan-secret` and **must be overridden** in any shared
-  environment. The app also re-creates missing buckets at startup
-  (`app.storage.ensure-buckets=true`) as a best-effort safety net.
+  the MinIO health check. The service uses the Bitnami Legacy package of the
+  MinIO server because upstream no longer publishes `minio/minio`/`minio/mc` on
+  Docker Hub; `MINIO_DEFAULT_BUCKETS` creates the `sondhan-profile` and
+  `sondhan-medical` buckets during startup, replacing the old one-shot `mc`
+  init container. Development defaults are `sondhan-admin` / `sondhan-secret`
+  and **must be overridden** in any shared environment. The app also re-creates
+  missing buckets at startup (`app.storage.ensure-buckets=true`) as a
+  best-effort safety net.
 * Presigned document URLs are generated against `MINIO_ENDPOINT`. A browser must
   be able to reach that hostname, so in production point it at the public
   S3/MinIO endpoint (or a proxy in front of it), not at an internal address.
@@ -371,8 +373,8 @@ Implemented in this change:
   actuator endpoints in the application;
 * `LOG_DIR` made overridable so the container writes logs to the mounted
   `/var/log/sondhan` volume instead of a read-only image path;
-* MinIO document storage plus a one-shot `minio-init` bucket bootstrap in the
-  development stack, with managed object storage for production;
+* MinIO document storage with startup bucket bootstrap in the development
+  stack, with managed object storage for production;
 * realtime chat/notification WebSocket support with Redis fanout (no sticky
   sessions) and optional FCM device push;
 * this operating document.

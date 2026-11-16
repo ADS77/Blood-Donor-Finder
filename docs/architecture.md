@@ -897,8 +897,8 @@ never on the application node. The API records metadata (`bucket`, `object_key`,
 `checksum_sha256`, `verification_status`) in `document` and issues short-lived
 presigned URLs on demand. Uploads are size/type validated and hashed; deletes
 remove both the row and the object. Buckets are created idempotently at startup
-(`StorageBucketInitializer`, best-effort) and by the one-shot `minio-init`
-Compose service in deployment. Download filenames are sanitized before being
+(`StorageBucketInitializer`, best-effort) and by the storage server's
+`MINIO_DEFAULT_BUCKETS` setting in the development Compose stack. Download filenames are sanitized before being
 placed into the presigned `response-content-disposition` header. A MinIO outage
 fails only document operations; the rest of the API remains available.
 
@@ -1144,7 +1144,7 @@ Recommended style:
 | 2026-11-15 | Added RBAC (`ROLE_DONOR`/`ROLE_ORG_ADMIN`/`ROLE_SYSTEM_ADMIN`), per-IP rate limiting, OTP salting, anti-enumeration and principal-bound writes | §5, §6 |
 | 2026-11-15 | Added accept-first-donor-wins + private chat with REST persistence and Redis-fanout STOMP delivery | §5, §11.4 |
 | 2026-11-15 | Added notification center, realtime badge push, optional FCM push and the daily digest email worker | §5, §11.5 |
-| 2026-11-15 | Added MinIO document service with presigned URLs; added MinIO/`minio-init` to Compose | §11.6, `docs/container-deployment.md` |
+| 2026-11-15 | Added MinIO document service with presigned URLs; added MinIO to the development Compose stack | §11.6, `docs/container-deployment.md` |
 | 2026-11-15 | Added donation completion state machine with rating and 3-day auto-confirm | §11.7 |
 | 2026-11-15 | Added `search_after` pagination, expanding-radius nearby search, urgent escalation ladder and location freshness/staleness pipeline | §11.1, §11.8 |
 | 2026-11-15 | Added `user.location.updated` and `chat.message.sent` topics; documented new reliability and configuration entries | §8, §13, §14 |
