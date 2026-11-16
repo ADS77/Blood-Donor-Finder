@@ -121,7 +121,7 @@ public class JwtTokenProvider {
             throw new IllegalArgumentException("Token is missing the token type claim");
         }
         try {
-            return TokenType.valueOf(type);
+            return TokenType.fromValue(type);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Unsupported token type: " + type, e);
         }
