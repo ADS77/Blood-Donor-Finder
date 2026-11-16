@@ -1,11 +1,14 @@
 package com.bd.blooddonorfinder.service;
 
+import com.bd.blooddonorfinder.exception.AuthException;
 import com.bd.blooddonorfinder.exception.UserNotFoundException;
+import com.bd.blooddonorfinder.exception.enums.ErrorCode;
 import com.bd.blooddonorfinder.model.BloodRequest;
 import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
 import com.bd.blooddonorfinder.model.enums.RequestUrgency;
 import com.bd.blooddonorfinder.payload.request.BloodRequestDto;
+import com.bd.blooddonorfinder.payload.response.BloodRequestViewDto;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.repository.BloodRequestRepository;
 import com.bd.blooddonorfinder.repository.UserRepository;
@@ -38,7 +41,7 @@ public class BloodRequestServiceImpl implements BloodRequestService {
 
     @Override
     @Transactional
-    public RestApiResponse<BloodRequest> createBloodRequest(UUID requesterId, BloodRequestDto bloodRequestDto) {
+    public RestApiResponse<BloodRequestViewDto> createBloodRequest(UUID requesterId, BloodRequestDto bloodRequestDto) {
         User requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -60,7 +63,40 @@ public class BloodRequestServiceImpl implements BloodRequestService {
         log.debug("Blood request {} created by userId={}, urgency={}, expiresAt={}",
                 saved.getId(), requesterId, urgency, saved.getExpiresAt());
 
-        return RestApiResponse.success(saved, "Blood Request Created");
+        return RestApiResponse.success(BloodRequestViewDto.from(saved), "Blood Request Created");
+    }
+
+    /**
+     * Requester cancels their own pending request. Cancellation is only legal
+     * before a donor accepts — afterwards the flow belongs to the donation
+     * lifecycle (complete → approve/dispute). Same ownership guard as the
+     * donation flow: other people's requests read as "not found" so request
+     * ids cannot be enumerated.
+     */
+    @Override
+    @Transactional
+    public RestApiResponse<BloodRequestViewDto> cancelRequest(UUID requesterId, UUID requestId) {
+        BloodRequest request = bloodRequestRepository.findWithParticipantsById(requestId)
+                .orElseThrow(() -> new AuthException(ErrorCode.REQUEST_NOT_FOUND, "Request not found"));
+        if (!requesterId.equals(request.getRequester().getId())) {
+            log.warn("User={} attempted to cancel request={} they did not create", requesterId, requestId);
+            throw new AuthException(ErrorCode.REQUEST_NOT_FOUND, "Request not found");
+        }
+
+        // Conditional transition — the race guard against a donor accepting
+        // while the requester cancels; only one of the two can win.
+        int moved = bloodRequestRepository.cancelAtomically(requestId, requesterId);
+        if (moved == 0) {
+            log.debug("Cannot cancel request {} in state {}", requestId, request.getStatus());
+            throw new AuthException(ErrorCode.INVALID_REQUEST,
+                    "Request cannot be cancelled from state " + request.getStatus());
+        }
+        // Mirror the bulk update on the managed entity so no later mutation
+        // flushes the stale PENDING status back (full-column flush hazard).
+        request.setStatus(RequestStatus.CANCELLED);
+        log.info("Request {} cancelled by requester {}", requestId, requesterId);
+
+        return RestApiResponse.success(BloodRequestViewDto.from(request), "Request cancelled");
     }
 
     private long ttlSeconds(RequestUrgency urgency) {

@@ -1,8 +1,8 @@
 package com.bd.blooddonorfinder.controller;
 
-import com.bd.blooddonorfinder.model.BloodRequest;
 import com.bd.blooddonorfinder.payload.request.BloodRequestDto;
 import com.bd.blooddonorfinder.payload.response.AcceptRequestResponse;
+import com.bd.blooddonorfinder.payload.response.BloodRequestViewDto;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.security.UserPrincipal;
 import com.bd.blooddonorfinder.service.BloodRequestService;
@@ -31,11 +31,24 @@ public class BloodRequestController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<RestApiResponse<BloodRequest>> createBloodRequest(
+    public ResponseEntity<RestApiResponse<BloodRequestViewDto>> createBloodRequest(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody BloodRequestDto bloodRequestDto) {
         return ResponseEntity.ok()
                 .body(bloodRequestService.createBloodRequest(principal.getId(), bloodRequestDto));
+    }
+
+    /**
+     * Requester cancels their own pending request. No donor is attached yet in
+     * PENDING, so there is nothing to notify — the request simply stops being
+     * visible to donors.
+     */
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<RestApiResponse<BloodRequestViewDto>> cancelRequest(
+            @PathVariable("id") UUID requestId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok()
+                .body(bloodRequestService.cancelRequest(principal.getId(), requestId));
     }
 
     /**

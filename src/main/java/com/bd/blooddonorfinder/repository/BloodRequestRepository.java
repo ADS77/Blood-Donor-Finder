@@ -79,6 +79,22 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
            """)
     int transitionToFulfilled(@Param("requestId") UUID requestId, @Param("now") Instant now);
 
+    /**
+     * Requester cancels their own request: PENDING → CANCELLED. Cancel is only
+     * legal before a donor accepts; afterwards the flow belongs to the
+     * donation lifecycle. Returns 1 on success, 0 when raced or wrong-state.
+     */
+    @Transactional
+    @Modifying
+    @Query("""
+           UPDATE BloodRequest b
+           SET b.status = com.bd.blooddonorfinder.model.enums.RequestStatus.CANCELLED
+           WHERE b.id = :requestId
+             AND b.status = com.bd.blooddonorfinder.model.enums.RequestStatus.PENDING
+             AND b.requester.id = :requesterId
+           """)
+    int cancelAtomically(@Param("requestId") UUID requestId, @Param("requesterId") UUID requesterId);
+
     /** Requester disputes: PENDING_APPROVAL → DISPUTED. Returns 0 when raced. */
     @Transactional
     @Modifying
