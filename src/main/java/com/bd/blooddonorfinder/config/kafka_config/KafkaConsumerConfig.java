@@ -3,8 +3,11 @@ package com.bd.blooddonorfinder.config.kafka_config;
 
 import com.bd.blooddonorfinder.kafka.model.BaseEvent;
 import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
+import com.bd.blooddonorfinder.kafka.producer.GenericKafkaEventProducer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +16,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.ConsumerRecordRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
@@ -23,6 +27,7 @@ import java.util.Map;
 
 @Configuration
 @EnableKafka
+@Slf4j
 public class KafkaConsumerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
@@ -72,19 +77,65 @@ public class KafkaConsumerConfig {
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
+    /**
+     * Error handler for user events (registered/updated/deleted). Retries
+     * in-process with a fixed backoff, then dead-letters the event instead of
+     * silently dropping it: a lost user.registered event leaves the donor
+     * unsearchable forever (no geo write can heal a doc that never existed).
+     */
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, BaseEvent> kafkaListenerContainerFactory() {
+    public DefaultErrorHandler userEventErrorHandler(GenericKafkaEventProducer eventProducer) {
+        ConsumerRecordRecoverer recoverer = (record, exception) -> {
+            Object value = record.value();
+            if (!(value instanceof BaseEvent event)) {
+                log.error("Cannot dead-letter non-user record: topic={}, partition={}, offset={}, valueType={}",
+                        record.topic(), record.partition(), record.offset(),
+                        value == null ? "null" : value.getClass().getName(), exception);
+                return;
+            }
+
+            Throwable rootCause = rootCause(exception);
+            String error = rootCause != null && rootCause.getMessage() != null
+                    ? rootCause.getMessage()
+                    : "unknown delivery failure";
+            log.error("Dead-lettering user event: eventId={}, eventType={}, topic={}, partition={}, "
+                            + "offset={}, rootCause={}",
+                    event.getEventId(), event.getEventType(), record.topic(),
+                    record.partition(), record.offset(), rootCause, exception);
+
+            try {
+                eventProducer.publishToDlqBlocking(event, error);
+            } catch (RuntimeException publishError) {
+                log.error("Could not dead-letter user event: eventId={}. The message is lost after "
+                                + "exhausting retries — investigate the DLQ publisher.",
+                        event.getEventId(), publishError);
+            }
+        };
+
+        return new DefaultErrorHandler(recoverer, new FixedBackOff(retryIntervalMs, maxRetries));
+    }
+
+    private static Throwable rootCause(Throwable throwable) {
+        if (throwable == null) {
+            return null;
+        }
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, BaseEvent> kafkaListenerContainerFactory(
+            @Qualifier("userEventErrorHandler") DefaultErrorHandler userEventErrorHandler) {
         ConcurrentKafkaListenerContainerFactory<String, BaseEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(concurrency);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
         factory.getContainerProperties().setPollTimeout(pollTimeout);
-        DefaultErrorHandler errorHandler = new DefaultErrorHandler(
-                new FixedBackOff(retryIntervalMs, maxRetries)
-        );
-
-        factory.setCommonErrorHandler(errorHandler);
+        factory.setCommonErrorHandler(userEventErrorHandler);
 
         return factory;
     }
