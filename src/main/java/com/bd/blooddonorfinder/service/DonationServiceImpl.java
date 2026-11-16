@@ -301,7 +301,7 @@ public class DonationServiceImpl implements DonationService {
     private AuthException wrongState(RequestStatus current, String action) {
         log.debug("Cannot {} request in state {}", action, current);
         return new AuthException(ErrorCode.INVALID_REQUEST,
-                "Donation cannot be " + action + "ed from state " + current);
+                "Donation cannot be " + action + "d from state " + current);
     }
 
     private void closeChat(UUID requestId) {
