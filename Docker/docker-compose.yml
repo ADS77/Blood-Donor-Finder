@@ -178,6 +178,13 @@ services:
       xpack.security.enabled: "false"
       bootstrap.memory_lock: "true"
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      # ES's default disk-based flood-stage guard reserves a 100 GB headroom;
+      # on typical laptops that freezes every index as read-only the moment the
+      # disk passes ~95% (observed live: registration events silently failed to
+      # index). A dev single-node cluster with local data doesn't need the
+      # allocation decider at all — a full disk then degrades writes, which the
+      # app surfaces in logs, instead of silently dropping search visibility.
+      cluster.routing.allocation.disk.threshold_enabled: "false"
     ulimits:
       memlock:
         soft: -1
