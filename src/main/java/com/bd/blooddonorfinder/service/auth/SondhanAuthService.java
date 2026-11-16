@@ -281,7 +281,7 @@ public class SondhanAuthService implements AuthService {
                 log.warn("OTP verification for non-existent user_id={} from ip={}",
                         request.getUserId(), clientContext.getIpAddress());
                 throw new OtpExpiredException(ErrorCode.OTP_EXPIRED,
-                        "No active OTP found, request a new one");
+                        OtpService.NO_ACTIVE_OTP_MESSAGE);
             }
             validateOtpPurpose(user, purpose);
             try {

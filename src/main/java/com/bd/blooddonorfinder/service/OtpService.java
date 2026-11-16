@@ -25,6 +25,17 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class OtpService {
 
+    /**
+     * One shared, actionable message for every "no active OTP" path — known
+     * and unknown users alike, so the response never reveals whether an
+     * account exists. The login and register flows both issue a fresh OTP,
+     * which is the user's self-service way out; support is the fallback when
+     * mail never arrives (e.g. parked FAILED in the email outbox).
+     */
+    public static final String NO_ACTIVE_OTP_MESSAGE =
+            "No active OTP found. Log in or register again to receive a fresh OTP; "
+                    + "if the email never arrives, contact support.";
+
     private static final Logger log = LoggerFactory.getLogger(OtpService.class);
 
     private static final int OTP_TTL_SECONDS = 180;
@@ -141,7 +152,7 @@ public class OtpService {
                     ErrorCode.OTP_ALREADY_USED, "OTP has already been used");
         }
         return new OtpExpiredException(
-                ErrorCode.OTP_EXPIRED, "No active OTP found, request a new one");
+                ErrorCode.OTP_EXPIRED, NO_ACTIVE_OTP_MESSAGE);
     }
 
     private void handleFailedAttempt(User user) {
