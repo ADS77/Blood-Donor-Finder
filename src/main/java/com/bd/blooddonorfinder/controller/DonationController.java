@@ -10,6 +10,7 @@ import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.security.AppPermissions;
 import com.bd.blooddonorfinder.security.UserPrincipal;
 import com.bd.blooddonorfinder.service.DonationService;
+import com.bd.blooddonorfinder.utils.Utils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -57,11 +58,9 @@ public class DonationController {
             @Valid @RequestBody(required = false) DonationCompleteRequest body,
             Authentication authentication) {
         UUID callerId = requireCaller(authentication);
-        RestApiResponse<DonationDto> body_ = new RestApiResponse<>();
-        body_.getSuccess().setData(donationService.markComplete(callerId, requestId, body));
-        body_.getSuccess().setMessage("Donation marked complete — awaiting the requester's approval");
-        body_.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body_);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                "Donation marked complete — awaiting the requester's approval",
+                donationService.markComplete(callerId, requestId, body)));
     }
 
     /** Requester approves the donation (optionally rates 1–5). */
@@ -72,11 +71,9 @@ public class DonationController {
             @Valid @RequestBody(required = false) DonationApprovalRequest body,
             Authentication authentication) {
         UUID callerId = requireCaller(authentication);
-        RestApiResponse<DonationDto> body_ = new RestApiResponse<>();
-        body_.getSuccess().setData(donationService.approve(callerId, requestId, body));
-        body_.getSuccess().setMessage("Donation approved — donor's record updated");
-        body_.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body_);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                "Donation approved — donor's record updated",
+                donationService.approve(callerId, requestId, body)));
     }
 
     /** Requester rejects the completion claim (reason required). */
@@ -87,11 +84,9 @@ public class DonationController {
             @Valid @RequestBody DonationDisputeRequest body,
             Authentication authentication) {
         UUID callerId = requireCaller(authentication);
-        RestApiResponse<DonationDto> body_ = new RestApiResponse<>();
-        body_.getSuccess().setData(donationService.dispute(callerId, requestId, body));
-        body_.getSuccess().setMessage("Completion claim disputed");
-        body_.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body_);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                "Completion claim disputed",
+                donationService.dispute(callerId, requestId, body)));
     }
 
     /** Lifetime stats for any donor (count, average rating). */
@@ -99,10 +94,8 @@ public class DonationController {
     @GetMapping("/stats/{donorId}")
     public ResponseEntity<RestApiResponse<DonorStatsDto>> stats(
             @PathVariable UUID donorId, Authentication authentication) {
-        RestApiResponse<DonorStatsDto> body = new RestApiResponse<>();
-        body.getSuccess().setData(donationService.getStats(donorId));
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                donationService.getStats(donorId)));
     }
 
     /** The caller's own donation history, newest first (keyset via {@code before}). */
@@ -114,10 +107,8 @@ public class DonationController {
             @Min(value = 0, message = "before must be a positive epoch-millis") Long before,
             @RequestParam(value = "size", required = false) @Min(1) @Max(100) Integer size) {
         UUID callerId = requireCaller(authentication);
-        RestApiResponse<List<DonationDto>> body = new RestApiResponse<>();
-        body.getSuccess().setData(donationService.myHistory(callerId, before, size));
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                donationService.myHistory(callerId, before, size)));
     }
 
     private static UUID requireCaller(Authentication authentication) {

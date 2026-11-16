@@ -8,6 +8,7 @@ import com.bd.blooddonorfinder.payload.response.ChatSummaryDto;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.security.UserPrincipal;
 import com.bd.blooddonorfinder.service.ChatService;
+import com.bd.blooddonorfinder.utils.Utils;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -48,10 +49,7 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         List<ChatSummaryDto> chats = chatService.getMyChats(callerId);
-        RestApiResponse<List<ChatSummaryDto>> body = new RestApiResponse<>();
-        body.getSuccess().setData(chats);
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK, chats));
     }
 
     /** Keyset backfill: pass {@code after} (epoch-millis cursor) to fetch newer messages. */
@@ -66,10 +64,7 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         ChatMessagesResponse response = chatService.getMessages(chatId, callerId, after, size);
-        RestApiResponse<ChatMessagesResponse> body = new RestApiResponse<>();
-        body.getSuccess().setData(response);
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK, response));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
@@ -82,10 +77,8 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         ChatMessageDto message = chatService.sendMessage(chatId, callerId, request.getBody());
-        RestApiResponse<ChatMessageDto> body = new RestApiResponse<>();
-        body.getSuccess().setData(message);
-        body.setStatus(HttpStatus.CREATED);
-        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Utils.buildSuccessRestResponse(HttpStatus.CREATED, message));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
@@ -97,10 +90,7 @@ public class ChatController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         chatService.markRead(chatId, callerId);
-        RestApiResponse<String> body = new RestApiResponse<>();
-        body.getSuccess().setMessage("marked read");
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK, "marked read", (String) null));
     }
 
     static UUID requireCaller(Authentication authentication) {

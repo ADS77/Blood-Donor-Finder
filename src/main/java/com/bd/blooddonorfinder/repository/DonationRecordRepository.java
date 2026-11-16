@@ -16,15 +16,25 @@ import java.util.UUID;
 public interface DonationRecordRepository extends JpaRepository<DonationRecord, UUID> {
 
     /** Donor's donation history, newest first (keyset via donatedAt cursor). */
+    // Two variants instead of a nullable cursor parameter; see
+    // DocumentRepository.findActiveFeed for the reason.
     @Query("""
            SELECT d FROM DonationRecord d
            WHERE d.donor.id = :donorId
-             AND (:before IS NULL OR d.donatedAt < :before)
            ORDER BY d.donatedAt DESC
            """)
     List<DonationRecord> findDonorHistory(@Param("donorId") UUID donorId,
-                                          @Param("before") Instant before,
                                           Pageable pageable);
+
+    @Query("""
+           SELECT d FROM DonationRecord d
+           WHERE d.donor.id = :donorId
+             AND d.donatedAt < :before
+           ORDER BY d.donatedAt DESC
+           """)
+    List<DonationRecord> findDonorHistoryBefore(@Param("donorId") UUID donorId,
+                                                @Param("before") Instant before,
+                                                Pageable pageable);
 
     Optional<DonationRecord> findByRequestId(UUID requestId);
 }

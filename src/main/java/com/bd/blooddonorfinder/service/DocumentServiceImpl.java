@@ -149,9 +149,12 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public List<DocumentDto> listMy(UUID ownerId, Long beforeEpochMs, Integer size) {
         int pageSize = size != null && size > 0 ? Math.min(size, MAX_PAGE_SIZE) : 30;
-        LocalDateTime before = beforeEpochMs != null ? toLocalDateTime(beforeEpochMs) : null;
-        return documentRepository.findActiveFeed(ownerId, before, PageRequest.of(0, pageSize))
-                .stream().map(this::toDto).toList();
+        PageRequest page = PageRequest.of(0, pageSize);
+        List<Document> docs = beforeEpochMs == null
+                ? documentRepository.findActiveFeed(ownerId, page)
+                : documentRepository.findActiveFeedBefore(
+                        ownerId, toLocalDateTime(beforeEpochMs), page);
+        return docs.stream().map(this::toDto).toList();
     }
 
     @Override

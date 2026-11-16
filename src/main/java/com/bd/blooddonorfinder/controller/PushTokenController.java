@@ -6,6 +6,7 @@ import com.bd.blooddonorfinder.model.enums.PushPlatform;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.security.UserPrincipal;
 import com.bd.blooddonorfinder.service.push.PushTokenService;
+import com.bd.blooddonorfinder.utils.Utils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -46,10 +47,8 @@ public class PushTokenController {
             @Valid @RequestBody RegisterPushTokenRequest body, Authentication authentication) {
         UUID userId = requireCaller(authentication);
         pushTokenService.register(userId, body.getToken(), body.getPlatform());
-        RestApiResponse<String> response = new RestApiResponse<>();
-        response.getSuccess().setMessage("push token registered");
-        response.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(
+                HttpStatus.OK, "push token registered", (String) null));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
@@ -58,10 +57,8 @@ public class PushTokenController {
             @PathVariable String token, Authentication authentication) {
         UUID userId = requireCaller(authentication);
         pushTokenService.unregister(userId, token);
-        RestApiResponse<String> response = new RestApiResponse<>();
-        response.getSuccess().setMessage("push token removed");
-        response.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(
+                HttpStatus.OK, "push token removed", (String) null));
     }
 
     private static UUID requireCaller(Authentication authentication) {

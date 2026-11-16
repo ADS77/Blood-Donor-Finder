@@ -6,6 +6,7 @@ import com.bd.blooddonorfinder.payload.response.DocumentDto;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.security.UserPrincipal;
 import com.bd.blooddonorfinder.service.DocumentService;
+import com.bd.blooddonorfinder.utils.Utils;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.extern.slf4j.Slf4j;
@@ -51,11 +52,9 @@ public class DocumentController {
             @RequestParam("docType") DocumentType docType,
             Authentication authentication) {
         UUID callerId = requireCaller(authentication);
-        RestApiResponse<DocumentDto> body = new RestApiResponse<>();
-        body.getSuccess().setData(documentService.upload(callerId, docType, file));
-        body.getSuccess().setMessage("uploaded");
-        body.setStatus(HttpStatus.CREATED);
-        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                Utils.buildSuccessRestResponse(HttpStatus.CREATED, "uploaded",
+                        documentService.upload(callerId, docType, file)));
     }
 
     /** Owner's documents, newest first. Keyset pagination via {@code before}. */
@@ -67,21 +66,16 @@ public class DocumentController {
             @Min(value = 0, message = "before must be a positive epoch-millis") Long before,
             @RequestParam(value = "size", required = false) @Min(1) @Max(100) Integer size) {
         UUID callerId = requireCaller(authentication);
-        RestApiResponse<List<DocumentDto>> body = new RestApiResponse<>();
-        body.getSuccess().setData(documentService.listMy(callerId, before, size));
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                documentService.listMy(callerId, before, size)));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
     @GetMapping("/{id}")
     public ResponseEntity<RestApiResponse<DocumentDto>> get(
             @PathVariable UUID id, Authentication authentication) {
-        RestApiResponse<DocumentDto> body = new RestApiResponse<>();
-        body.getSuccess().setData(documentService.get(
-                requireCaller(authentication), id, isSystemAdmin(authentication)));
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK, documentService.get(
+                requireCaller(authentication), id, isSystemAdmin(authentication))));
     }
 
     /** Short-lived presigned download URL (bytes flow browser → storage directly). */
@@ -91,11 +85,8 @@ public class DocumentController {
             @PathVariable UUID id, Authentication authentication) {
         String url = documentService.getDownloadUrl(
                 requireCaller(authentication), id, isSystemAdmin(authentication));
-        RestApiResponse<Map<String, String>> body = new RestApiResponse<>();
-        body.getSuccess().setData(Map.of("url", url));
-        body.getSuccess().setMessage("URL expires shortly — fetch again when needed");
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                "URL expires shortly — fetch again when needed", Map.of("url", url)));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
@@ -103,10 +94,7 @@ public class DocumentController {
     public ResponseEntity<RestApiResponse<String>> delete(
             @PathVariable UUID id, Authentication authentication) {
         documentService.delete(requireCaller(authentication), id, isSystemAdmin(authentication));
-        RestApiResponse<String> body = new RestApiResponse<>();
-        body.getSuccess().setMessage("deleted");
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK, "deleted", (String) null));
     }
 
     private static UUID requireCaller(Authentication authentication) {

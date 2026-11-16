@@ -5,6 +5,7 @@ import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.payload.response.UnreadCountDto;
 import com.bd.blooddonorfinder.security.UserPrincipal;
 import com.bd.blooddonorfinder.service.NotificationService;
+import com.bd.blooddonorfinder.utils.Utils;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.extern.slf4j.Slf4j;
@@ -49,10 +50,8 @@ public class NotificationController {
         if (callerId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        RestApiResponse<List<NotificationDto>> body = new RestApiResponse<>();
-        body.getSuccess().setData(notificationService.getNotifications(callerId, before, size));
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                notificationService.getNotifications(callerId, before, size)));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
@@ -62,10 +61,8 @@ public class NotificationController {
         if (callerId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        RestApiResponse<UnreadCountDto> body = new RestApiResponse<>();
-        body.getSuccess().setData(new UnreadCountDto(notificationService.getUnreadCount(callerId)));
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                new UnreadCountDto(notificationService.getUnreadCount(callerId))));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
@@ -76,10 +73,7 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         notificationService.markRead(callerId, id);
-        RestApiResponse<String> body = new RestApiResponse<>();
-        body.getSuccess().setMessage("marked read");
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK, "marked read", (String) null));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")
@@ -90,10 +84,8 @@ public class NotificationController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         int updated = notificationService.markAllRead(callerId);
-        RestApiResponse<String> body = new RestApiResponse<>();
-        body.getSuccess().setMessage("marked " + updated + " notification(s) read");
-        body.setStatus(HttpStatus.OK);
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                "marked " + updated + " notification(s) read", (String) null));
     }
 
     private static UUID requireCaller(Authentication authentication) {

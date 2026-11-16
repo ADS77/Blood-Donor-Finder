@@ -16,16 +16,28 @@ import java.util.UUID;
 public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     /** Owner's document list, newest first (keyset: everything older than the cursor). */
+    // Two variants instead of a nullable cursor parameter: PostgreSQL cannot
+    // infer the parameter type inside "(:before IS NULL OR d.createdAt < :before)"
+    // when the value is null ("could not determine data type of parameter").
     @Query("""
            SELECT d FROM Document d
            WHERE d.owner.id = :ownerId
              AND d.status = com.bd.blooddonorfinder.model.enums.DocumentStatus.ACTIVE
-             AND (:before IS NULL OR d.createdAt < :before)
            ORDER BY d.createdAt DESC
            """)
     List<Document> findActiveFeed(@Param("ownerId") UUID ownerId,
-                                  @Param("before") LocalDateTime before,
                                   Pageable pageable);
+
+    @Query("""
+           SELECT d FROM Document d
+           WHERE d.owner.id = :ownerId
+             AND d.status = com.bd.blooddonorfinder.model.enums.DocumentStatus.ACTIVE
+             AND d.createdAt < :before
+           ORDER BY d.createdAt DESC
+           """)
+    List<Document> findActiveFeedBefore(@Param("ownerId") UUID ownerId,
+                                        @Param("before") LocalDateTime before,
+                                        Pageable pageable);
 
     Optional<Document> findByIdAndOwnerIdAndStatus(UUID id, UUID ownerId,
                                                    com.bd.blooddonorfinder.model.enums.DocumentStatus status);

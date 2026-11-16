@@ -189,10 +189,12 @@ public class DonationServiceImpl implements DonationService {
     @Transactional(readOnly = true)
     public List<DonationDto> myHistory(UUID donorId, Long beforeEpochMs, Integer size) {
         int pageSize = size != null && size > 0 ? Math.min(size, MAX_PAGE_SIZE) : 30;
-        Instant before = beforeEpochMs != null
-                ? Instant.ofEpochMilli(beforeEpochMs) : null;
-        return donationRecordRepository.findDonorHistory(donorId, before, PageRequest.of(0, pageSize))
-                .stream().map(this::toDto).toList();
+        PageRequest page = PageRequest.of(0, pageSize);
+        List<DonationRecord> history = beforeEpochMs == null
+                ? donationRecordRepository.findDonorHistory(donorId, page)
+                : donationRecordRepository.findDonorHistoryBefore(
+                        donorId, Instant.ofEpochMilli(beforeEpochMs), page);
+        return history.stream().map(this::toDto).toList();
     }
 
     // ── system: auto-approve stale claims ───────────────────────────────

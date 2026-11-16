@@ -17,15 +17,25 @@ import java.util.UUID;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
     /** Notification feed, newest first (keyset: everything older than the cursor). */
+    // Two variants instead of a nullable cursor parameter; see
+    // DocumentRepository.findActiveFeed for the reason.
     @Query("""
            SELECT n FROM Notification n
            WHERE n.recipient.id = :userId
-             AND (:before IS NULL OR n.createdAt < :before)
            ORDER BY n.createdAt DESC
            """)
     List<Notification> findFeed(@Param("userId") UUID userId,
-                                @Param("before") LocalDateTime before,
                                 Pageable pageable);
+
+    @Query("""
+           SELECT n FROM Notification n
+           WHERE n.recipient.id = :userId
+             AND n.createdAt < :before
+           ORDER BY n.createdAt DESC
+           """)
+    List<Notification> findFeedBefore(@Param("userId") UUID userId,
+                                      @Param("before") LocalDateTime before,
+                                      Pageable pageable);
 
     @Query("""
            SELECT COUNT(n) FROM Notification n

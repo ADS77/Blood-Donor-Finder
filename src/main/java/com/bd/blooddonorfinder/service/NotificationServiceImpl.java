@@ -84,9 +84,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public List<NotificationDto> getNotifications(UUID userId, Long beforeEpochMs, Integer size) {
         int pageSize = size != null && size > 0 ? Math.min(size, MAX_PAGE_SIZE) : 30;
-        LocalDateTime before = beforeEpochMs != null ? toLocalDateTime(beforeEpochMs) : null;
-        List<Notification> page = notificationRepository.findFeed(userId, before, PageRequest.of(0, pageSize));
-        return page.stream().map(this::toDto).toList();
+        PageRequest page = PageRequest.of(0, pageSize);
+        List<Notification> feedPage = beforeEpochMs == null
+                ? notificationRepository.findFeed(userId, page)
+                : notificationRepository.findFeedBefore(userId, toLocalDateTime(beforeEpochMs), page);
+        return feedPage.stream().map(this::toDto).toList();
     }
 
     @Override
