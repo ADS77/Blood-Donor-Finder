@@ -67,6 +67,7 @@ services:
       REDIS_CLUSTER_NODES: redis-1:6379,redis-3:6379,redis-5:6379
       # Document service talks to the in-network MinIO endpoint, not the host one.
       MINIO_ENDPOINT: http://minio:9000
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       SPRINGDOC_ENABLED: ${SPRINGDOC_ENABLED:-true}
     ports:
       - "8088:8088"

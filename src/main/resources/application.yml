@@ -1,4 +1,10 @@
 spring:
+  # Dev is the default profile so an IDE run (no env vars) gets dev behavior,
+  # e.g. the fixed OTP in application-dev.properties. Every compose stack sets
+  # SPRING_PROFILES_ACTIVE explicitly (dev in Docker/docker-compose.yml,
+  # prod in Docker/docker-compose.prod.yml), which overrides this default.
+  profiles.default: dev
+
   session:
     store-type: redis
     redis:
