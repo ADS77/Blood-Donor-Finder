@@ -6,6 +6,7 @@ import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import com.bd.blooddonorfinder.kafka.sync.AbstractSyncHandler;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.service.es.ElasticSearchIndexService;
+import com.bd.blooddonorfinder.service.geo.DonorGeoRedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -17,13 +18,16 @@ public class GeoEnrichedEventHandler extends AbstractSyncHandler<UserGeoEnriched
     private final ElasticSearchIndexService elasticSearchIndexService;
     private final ProcessedEventStore processedEventStore;
     private final UserRepository userRepository;
+    private final DonorGeoRedisService donorGeoRedisService;
     protected GeoEnrichedEventHandler(ProcessedEventStore processedEventStore,
                                       ElasticSearchIndexService elasticSearchIndexService,
-                                      ProcessedEventStore processedEventStore1, UserRepository userRepository) {
+                                      ProcessedEventStore processedEventStore1, UserRepository userRepository,
+                                      DonorGeoRedisService donorGeoRedisService) {
         super(processedEventStore);
         this.elasticSearchIndexService = elasticSearchIndexService;
         this.processedEventStore = processedEventStore1;
         this.userRepository = userRepository;
+        this.donorGeoRedisService = donorGeoRedisService;
     }
     @Value("${kafka.topic.version}")
     private String topicVersion;
@@ -66,5 +70,10 @@ public class GeoEnrichedEventHandler extends AbstractSyncHandler<UserGeoEnriched
         elasticSearchIndexService.partialUpdateGeo(event.getUserId(),
                 event.getLatitude(),
                 event.getLongitude());
+
+        // Redis GEO fast path for nearby search — a cache write, never fatal
+        donorGeoRedisService.upsert(event.getUserId().toString(),
+                event.getLatitude().doubleValue(),
+                event.getLongitude().doubleValue());
     }
 }

@@ -1,24 +1,35 @@
 package com.bd.blooddonorfinder.service.es;
 
 import com.bd.blooddonorfinder.exception.ElasticSearchOperationException;
+import com.bd.blooddonorfinder.model.es.Location;
 import com.bd.blooddonorfinder.model.es.QueryModel.UserQueryModel;
 import com.bd.blooddonorfinder.model.es.SearchParam.GeoDonorSearchParams;
 import com.bd.blooddonorfinder.model.es.SearchParam.UserSearchParams;
 import com.bd.blooddonorfinder.model.es.common.SearchCriteria;
 import com.bd.blooddonorfinder.model.es.common.SearchType;
 import com.bd.blooddonorfinder.model.es.documents.DonorSearchDocument;
+import com.bd.blooddonorfinder.model.es.documents.RegisteredDonorDocument;
 import com.bd.blooddonorfinder.payload.request.NearbyDonorSearchRequest;
 import com.bd.blooddonorfinder.payload.response.ListResponse;
 import com.bd.blooddonorfinder.payload.response.NearbyDonorSearchResponse;
+import com.bd.blooddonorfinder.repository.es.RegisteredDonorDocumentRepository;
 import com.bd.blooddonorfinder.repository.es.UserElasticSearchCustomRepository;
 import com.bd.blooddonorfinder.repository.es.UserElasticSearchRepository;
+import com.bd.blooddonorfinder.service.geo.DonorGeoRedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -38,11 +49,17 @@ public class UserElasticSearchServiceImpl implements UserElasticSearchService {
 
     private final UserElasticSearchRepository userElasticSearchRepository;
     private final UserElasticSearchCustomRepository userElasticSearchCustomRepository;
+    private final DonorGeoRedisService donorGeoRedisService;
+    private final RegisteredDonorDocumentRepository registeredDonorDocumentRepository;
 
     public UserElasticSearchServiceImpl(UserElasticSearchRepository userElasticSearchRepository,
-                                        UserElasticSearchCustomRepository userElasticSearchCustomRepository) {
+                                        UserElasticSearchCustomRepository userElasticSearchCustomRepository,
+                                        DonorGeoRedisService donorGeoRedisService,
+                                        RegisteredDonorDocumentRepository registeredDonorDocumentRepository) {
         this.userElasticSearchRepository = userElasticSearchRepository;
         this.userElasticSearchCustomRepository = userElasticSearchCustomRepository;
+        this.donorGeoRedisService = donorGeoRedisService;
+        this.registeredDonorDocumentRepository = registeredDonorDocumentRepository;
     }
 
     @Override
@@ -142,6 +159,16 @@ public class UserElasticSearchServiceImpl implements UserElasticSearchService {
         Long maxLocationAgeDays = request.getMaxLocationAgeDays() != null
                 ? request.getMaxLocationAgeDays().longValue() : defaultMaxLocationAgeDays;
 
+        // Redis GEO fast path: one GEOSEARCH round trip per radius instead of an
+        // ES query. Serves first-page, cursor-free searches; availability
+        // filtering and search_after pagination fall through to Elasticsearch.
+        NearbyDonorSearchResponse fastPath = searchViaRedisFastPath(
+                request, latitude, longitude, initialRadius, step, maxRadius, maxExpansions,
+                maxLocationAgeDays);
+        if (fastPath != null) {
+            return fastPath;
+        }
+
         double radius = Math.min(initialRadius, maxRadius);
         int expansions = 0;
         ListResponse<DonorSearchDocument> result = null;
@@ -180,6 +207,160 @@ public class UserElasticSearchServiceImpl implements UserElasticSearchService {
 
         log.info("Nearby donor search at ({},{}): {} donors within {} km after {} expansion(s)",
                 latitude, longitude, response.getTotalHits(), radius, expansions);
+        return response;
+    }
+
+    /**
+     * Redis GEO fast path. Walks the same expansion ladder as the ES loop, but
+     * each probe is a single Redis GEOSEARCH; the first radius with members
+     * wins, their ES documents are fetched by id and filtered in memory.
+     *
+     * <p>Returns null — meaning "use Elasticsearch" — when the fast path is
+     * disabled, the request needs features Redis can't serve (cursor
+     * pagination, availability filtering), the Redis set is cold/missing, or
+     * nobody is found within the capped radius.</p>
+     */
+    private NearbyDonorSearchResponse searchViaRedisFastPath(NearbyDonorSearchRequest request,
+                                                             double latitude, double longitude,
+                                                             double initialRadius, double step,
+                                                             double maxRadius, Integer maxExpansions,
+                                                             Long maxLocationAgeDays) {
+        if (!donorGeoRedisService.isEnabled()) {
+            return null;
+        }
+        // Features the fast path cannot serve exactly — let ES handle them
+        if (request.getSearchAfter() != null && request.getSearchAfter().length > 0) {
+            return null;
+        }
+        if (request.getIsAvailable() != null) {
+            return null;
+        }
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        double radius = Math.min(initialRadius, maxRadius);
+        int expansions = 0;
+        while (true) {
+            List<String> ids = donorGeoRedisService.searchNearest(latitude, longitude, radius);
+            if (ids != null && !ids.isEmpty()) {
+                List<DonorSearchDocument> donors = hydrateAndFilter(
+                        ids, request.getBloodGroup(), request.getIsVerified(), maxLocationAgeDays);
+                if (!donors.isEmpty()) {
+                    int pageSize = request.getLength() != null && request.getLength() > 0
+                            ? Math.min(request.getLength(), 100) : 10;
+                    if (donors.size() > pageSize) {
+                        donors = donors.subList(0, pageSize);
+                    }
+                    return buildFastPathResponse(donors, latitude, longitude, radius, expansions,
+                            stopWatch.getTotalTimeMillis());
+                }
+                // members in range but nobody matched the filters — keep expanding
+            }
+            if (ids == null) {
+                // Redis has no usable data (cold set, flushed, or error): ES fallback
+                log.info("Redis GEO fast path unavailable at radius {} km — falling back to Elasticsearch", radius);
+                return null;
+            }
+            double stepForNext = radius >= STEP_INCREASE_THRESHOLD_KM ? DEFAULT_BIG_RADIUS_STEP_KM : step;
+            double next = Math.min(radius + stepForNext, maxRadius);
+            boolean expansionBoundReached = maxExpansions != null && expansions >= maxExpansions;
+            if (radius >= maxRadius || expansionBoundReached) {
+                log.info("Redis GEO fast path found no donors within {} km — falling back to Elasticsearch", radius);
+                return null;
+            }
+            radius = next;
+            expansions++;
+        }
+    }
+
+    /**
+     * Fetches the ES documents for the Redis hits (nearest-first order is
+     * preserved) and applies the same filters the ES geo query would:
+     * blood group, verification and the coordinate freshness window.
+     * Ids whose document no longer exists (deleted donors, stale members) are
+     * skipped — Redis has no user.deleted wiring yet.
+     */
+    private List<DonorSearchDocument> hydrateAndFilter(List<String> ids,
+                                                       String bloodGroup, Boolean isVerified,
+                                                       Long maxLocationAgeDays) {
+        List<RegisteredDonorDocument> docs = new ArrayList<>();
+        registeredDonorDocumentRepository.findAllById(ids).forEach(docs::add);
+        // preserve nearest-first ordering from the GEOSEARCH
+        Map<String, RegisteredDonorDocument> byId = new LinkedHashMap<>();
+        docs.forEach(doc -> byId.put(doc.getId(), doc));
+
+        long freshnessCutoff = maxLocationAgeDays != null && maxLocationAgeDays > 0
+                ? Instant.now().minus(Duration.ofDays(maxLocationAgeDays)).toEpochMilli()
+                : 0L;
+
+        List<DonorSearchDocument> donors = new ArrayList<>();
+        for (String id : ids) {
+            RegisteredDonorDocument doc = byId.get(id);
+            if (doc == null || doc.getLocation() == null) {
+                continue; // stale member — ES document already gone
+            }
+            if (bloodGroup != null && !bloodGroup.isBlank()
+                    && !bloodGroup.equalsIgnoreCase(doc.getBloodGroup())) {
+                continue;
+            }
+            if (isVerified != null && !isVerified.equals(doc.getIsVerified())) {
+                continue;
+            }
+            // Missing geoUpdatedAt = pre-pipeline doc: searchable, as in ES
+            if (freshnessCutoff > 0 && doc.getGeoUpdatedAt() != null
+                    && doc.getGeoUpdatedAt() < freshnessCutoff) {
+                continue;
+            }
+            donors.add(toSearchDocument(doc));
+        }
+        return donors;
+    }
+
+    /** Maps the indexed shape to the search read model, matching ES backfill semantics. */
+    private DonorSearchDocument toSearchDocument(RegisteredDonorDocument doc) {
+        DonorSearchDocument out = new DonorSearchDocument();
+        out.setId(doc.getId());
+        out.setName(doc.getUsername());
+        out.setBloodGroup(doc.getBloodGroup());
+        out.setIsVerified(doc.getIsVerified());
+        out.setRoles(doc.getRoles());
+        out.setGeoUpdatedAt(doc.getGeoUpdatedAt());
+        if (doc.getLastDonationDate() != null) {
+            out.setLastDonationDate(doc.getLastDonationDate().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+        if (doc.getCreatedAt() != null) {
+            out.setCreatedAt(doc.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+        if (doc.getUpdatedAt() != null) {
+            out.setUpdatedAt(doc.getUpdatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+        Location location = new Location();
+        location.setLatitude(doc.getLocation().getLat());
+        location.setLongitude(doc.getLocation().getLon());
+        location.setCity(doc.getCity());
+        location.setDistrict(doc.getDistrict());
+        location.setZipcode(doc.getZipcode());
+        out.setLocation(location);
+        return out;
+    }
+
+    private NearbyDonorSearchResponse buildFastPathResponse(List<DonorSearchDocument> donors,
+                                                            double latitude, double longitude,
+                                                            double radius, int expansions, long timeMs) {
+        // page size semantics identical to the ES path
+        NearbyDonorSearchResponse response = NearbyDonorSearchResponse.builder()
+                .donors(donors)
+                .totalHits((long) donors.size())
+                .timeMs(timeMs)
+                .latitude(latitude)
+                .longitude(longitude)
+                .searchRadiusKm(radius)
+                .expansions(expansions)
+                .searchAfter(null)
+                .build();
+        DonorDocumentSanitizer.sanitizeAll(response.getDonors());
+        log.info("Redis fast path: {} donors within {} km after {} expansion(s) ({} ms)",
+                donors.size(), radius, expansions, timeMs);
         return response;
     }
 

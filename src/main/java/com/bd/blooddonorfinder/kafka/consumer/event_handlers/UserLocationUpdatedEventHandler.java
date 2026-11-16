@@ -6,6 +6,7 @@ import com.bd.blooddonorfinder.kafka.model.topic.KafkaTopics;
 import com.bd.blooddonorfinder.kafka.sync.AbstractSyncHandler;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.service.es.ElasticSearchIndexService;
+import com.bd.blooddonorfinder.service.geo.DonorGeoRedisService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -23,13 +24,16 @@ public class UserLocationUpdatedEventHandler extends AbstractSyncHandler<UserLoc
 
     private final UserRepository userRepository;
     private final ElasticSearchIndexService elasticSearchIndexService;
+    private final DonorGeoRedisService donorGeoRedisService;
 
     protected UserLocationUpdatedEventHandler(ProcessedEventStore processedEventStore,
                                               UserRepository userRepository,
-                                              ElasticSearchIndexService elasticSearchIndexService) {
+                                              ElasticSearchIndexService elasticSearchIndexService,
+                                              DonorGeoRedisService donorGeoRedisService) {
         super(processedEventStore);
         this.userRepository = userRepository;
         this.elasticSearchIndexService = elasticSearchIndexService;
+        this.donorGeoRedisService = donorGeoRedisService;
     }
 
     @Value("${kafka.topic.version}")
@@ -67,5 +71,10 @@ public class UserLocationUpdatedEventHandler extends AbstractSyncHandler<UserLoc
                 event.getUserId(),
                 event.getLatitude(),
                 event.getLongitude());
+
+        // Redis GEO fast path for nearby search — a cache write, never fatal
+        donorGeoRedisService.upsert(event.getUserId().toString(),
+                event.getLatitude().doubleValue(),
+                event.getLongitude().doubleValue());
     }
 }
