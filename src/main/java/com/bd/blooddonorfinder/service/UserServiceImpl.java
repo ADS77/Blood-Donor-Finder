@@ -79,6 +79,12 @@ public class UserServiceImpl implements UserService{
                         new AuthException(ErrorCode.USER_NOT_FOUND, "User not found"));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findOptionalById(UUID userId) {
+        return userRepository.findById(userId);
+    }
+
     @Value("${app.security.anti-enumeration.enabled:true}")
     private boolean antiEnumerationEnabled;
 

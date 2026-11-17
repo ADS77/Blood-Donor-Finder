@@ -37,6 +37,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -297,7 +298,7 @@ class SondhanAuthServiceTest {
     void resendOtp_shouldIssueNewOtpForRegistrationUser() {
         User user = registrationUser();
         ResendOtpRequest request = resendOtpRequest(user.getId(), "REGISTER");
-        when(userService.findById(user.getId())).thenReturn(user);
+        when(userService.findOptionalById(user.getId())).thenReturn(Optional.of(user));
         when(otpIssuanceService.issue(user, OtpPurpose.REGISTER)).thenReturn(180);
 
         var response = authService.resendOtp(clientContext, request);
@@ -314,7 +315,7 @@ class SondhanAuthServiceTest {
     void resendOtp_shouldRejectAlreadyVerifiedRegistration() {
         User user = activeUser();
         ResendOtpRequest request = resendOtpRequest(user.getId(), "REGISTER");
-        when(userService.findById(user.getId())).thenReturn(user);
+        when(userService.findOptionalById(user.getId())).thenReturn(Optional.of(user));
 
         AuthException exception = assertThrows(AuthException.class,
                 () -> authService.resendOtp(clientContext, request));
@@ -327,7 +328,7 @@ class SondhanAuthServiceTest {
     void resendOtp_shouldRejectUnverifiedLogin() {
         User user = registrationUser();
         ResendOtpRequest request = resendOtpRequest(user.getId(), "LOGIN");
-        when(userService.findById(user.getId())).thenReturn(user);
+        when(userService.findOptionalById(user.getId())).thenReturn(Optional.of(user));
 
         AuthException exception = assertThrows(AuthException.class,
                 () -> authService.resendOtp(clientContext, request));
@@ -340,7 +341,7 @@ class SondhanAuthServiceTest {
     void resendOtp_shouldRejectUnsupportedPurpose() {
         User user = registrationUser();
         ResendOtpRequest request = resendOtpRequest(user.getId(), "PASSWORD_RESET");
-        when(userService.findById(user.getId())).thenReturn(user);
+        when(userService.findOptionalById(user.getId())).thenReturn(Optional.of(user));
 
         InvalidOtpPurposeException exception = assertThrows(InvalidOtpPurposeException.class,
                 () -> authService.resendOtp(clientContext, request));
@@ -353,7 +354,7 @@ class SondhanAuthServiceTest {
     void resendOtp_shouldPropagateDeliveryFailure() {
         User user = registrationUser();
         ResendOtpRequest request = resendOtpRequest(user.getId(), "REGISTER");
-        when(userService.findById(user.getId())).thenReturn(user);
+        when(userService.findOptionalById(user.getId())).thenReturn(Optional.of(user));
         when(otpIssuanceService.issue(user, OtpPurpose.REGISTER))
                 .thenThrow(new AuthException(ErrorCode.OTP_SEND_FAILED, "delivery failed"));
 
@@ -361,6 +362,23 @@ class SondhanAuthServiceTest {
                 () -> authService.resendOtp(clientContext, request));
 
         assertEquals(ErrorCode.OTP_SEND_FAILED, exception.getErrorCode());
+    }
+
+    @Test
+    void resendOtp_shouldReturnDecoyForUnknownUser() {
+        // SECURITY: an unknown user_id must read exactly like a real one so
+        // account existence cannot be probed through the resend endpoint.
+        ResendOtpRequest request = resendOtpRequest(UUID.randomUUID(), "REGISTER");
+        when(userService.findOptionalById(request.getUserId()))
+                .thenReturn(Optional.empty());
+
+        var response = authService.resendOtp(clientContext, request);
+
+        assertNotNull(response.getSuccess());
+        assertEquals(request.getUserId(), response.getSuccess().getData().userId());
+        assertEquals("OTP sent", response.getSuccess().getData().message());
+        verifyNoInteractions(otpIssuanceService);
+        verify(auditService, never()).log(any(), any(), any(), any(), any());
     }
 
     @Test

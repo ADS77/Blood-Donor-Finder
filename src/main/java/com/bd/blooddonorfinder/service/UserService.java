@@ -16,6 +16,13 @@ public interface UserService {
 
     User findById(UUID userId);
 
+    /**
+     * Non-throwing variant of {@link #findById(UUID)} for callers that must
+     * handle "absent" themselves inside their own transaction — the throwing
+     * version marks the caller's transaction rollback-only when caught.
+     */
+    Optional<User> findOptionalById(UUID userId);
+
     OtpSentResponse registerNewUser(RegisterRequest registerRequest, String ipAddress, String userAgent);
 
     RestApiResponse<User> registerUser(RegisterRequest registrationRequest);

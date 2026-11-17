@@ -356,10 +356,10 @@ public class SondhanAuthService implements AuthService {
     public RestApiResponse<OtpSentResponse> resendOtp(SondhanClientContext clientContext,
                                                       ResendOtpRequest request) {
         OtpPurpose purpose = Utils.parseOtpPurpose(request.getPurpose());
-        User user;
-        try {
-            user = userService.findById(request.getUserId());
-        } catch (AuthException | UserNotFoundException e) {
+        // Non-throwing lookup: the throwing findById runs in this transaction and
+        // would mark it rollback-only when caught, turning the decoy into a 500.
+        User user = userService.findOptionalById(request.getUserId()).orElse(null);
+        if (user == null) {
             // SECURITY: same decoy contract as verification — an unknown user_id
             // reads exactly like a real one ("OTP sent", nothing delivered), so
             // account existence cannot be probed through the resend endpoint.
