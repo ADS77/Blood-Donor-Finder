@@ -356,7 +356,18 @@ public class SondhanAuthService implements AuthService {
     public RestApiResponse<OtpSentResponse> resendOtp(SondhanClientContext clientContext,
                                                       ResendOtpRequest request) {
         OtpPurpose purpose = Utils.parseOtpPurpose(request.getPurpose());
-        User user = userService.findById(request.getUserId());
+        User user;
+        try {
+            user = userService.findById(request.getUserId());
+        } catch (AuthException | UserNotFoundException e) {
+            // SECURITY: same decoy contract as verification — an unknown user_id
+            // reads exactly like a real one ("OTP sent", nothing delivered), so
+            // account existence cannot be probed through the resend endpoint.
+            log.warn("OTP resend for non-existent user_id={} from ip={}",
+                    request.getUserId(), clientContext.getIpAddress());
+            return Utils.buildSuccessRestResponse(HttpStatus.OK,
+                    new OtpSentResponse(request.getUserId(), "OTP sent", 180));
+        }
         // Reuse the same purpose rules as verification so a resend cannot
         // bypass lockout, verification state or unsupported-purpose checks.
         validateOtpPurpose(user, purpose);
