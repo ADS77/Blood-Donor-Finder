@@ -68,3 +68,20 @@ JWTs are signed with ephemeral RSA keys: every restart/rebuild invalidates
 all outstanding tokens and users must log in again. A wave of “everyone got
 logged out” after a deploy is expected; a private/public key pair will be
 provided later to make tokens survive restarts.
+
+## Blood-request limits
+
+A requester can have at most 3 in-flight requests
+(PENDING/ACCEPTED/PENDING_APPROVAL/DISPUTED). The 4th creation attempt is
+rejected with HTTP 429: “You already have N blood request(s) in flight”.
+Adjust with `app.request.max-active-per-requester` if a legitimate user (e.g.
+a family coordinator) needs more. Cancelling a PENDING request frees the slot
+immediately.
+
+## Resend OTP
+
+`POST /api/auth/resend-otp` answers “OTP sent” with 200 for every request —
+including unknown user ids. Nothing is delivered to an unknown id; this is
+deliberate anti-enumeration, so do not “fix” the 200. Real resends share the
+verification rules (lockout, purpose restrictions) and the 10/hour OTP cap
+per email/phone still applies.
