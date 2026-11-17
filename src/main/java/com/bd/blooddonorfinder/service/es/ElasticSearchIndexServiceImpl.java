@@ -1,6 +1,5 @@
 package com.bd.blooddonorfinder.service.es;
 
-import com.bd.blooddonorfinder.exception.DocumentMissingException;
 import com.bd.blooddonorfinder.kafka.model.events.UserRegisteredEvent;
 import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.es.documents.RegisteredDonorDocument;
@@ -86,12 +85,15 @@ public class ElasticSearchIndexServiceImpl implements ElasticSearchIndexService{
             stopWatch.stop();
             log.info("Partial geo update applied to elastic for userId={}: lat={}, lon={}, timeTaken: {}ms", userId, latitude, longitude, stopWatch.getTotalTimeMillis());
 
-        } catch (DocumentMissingException e) {
+        } catch (org.springframework.data.elasticsearch.ResourceNotFoundException e) {
             // Self-heal instead of failing forever: registration indexing may
             // have been lost (e.g. to an ES outage/DLQ), but a location update
             // is still enough information to make the donor searchable. Rebuild
             // the full document from the database, then apply the partial geo
             // write again on top.
+            // NOTE: this is the exception Spring Data Elasticsearch actually
+            // throws for document_missing_exception (404) — not the local
+            // DocumentMissingException class, which nothing ever threw.
             log.warn("Elastic doc missing for userId={} during geo write — healing from the database", userId);
             try {
                 indexDonorFromDatabase(userId);

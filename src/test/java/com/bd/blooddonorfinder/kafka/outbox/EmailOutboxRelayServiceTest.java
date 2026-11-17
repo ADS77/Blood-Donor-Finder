@@ -128,6 +128,28 @@ class EmailOutboxRelayServiceTest {
         assertFalse(statuses.getValue().contains(EmailOutboxStatus.FAILED));
     }
 
+    @Test
+    void requeueFailed_flipsFailedRowsToPendingWithFreshBudget() {
+        when(repository.requeueFailed(eq(EmailOutboxStatus.PENDING),
+                eq(EmailOutboxStatus.FAILED), any(Instant.class))).thenReturn(4);
+
+        int requeued = relayService.requeueFailed();
+
+        assertEquals(4, requeued);
+        // PENDING is the target status, FAILED the source — and never the
+        // other way around
+        verify(repository).requeueFailed(eq(EmailOutboxStatus.PENDING),
+                eq(EmailOutboxStatus.FAILED), any(Instant.class));
+    }
+
+    @Test
+    void requeueFailed_withNoFailedRowsReturnsZero() {
+        when(repository.requeueFailed(eq(EmailOutboxStatus.PENDING),
+                eq(EmailOutboxStatus.FAILED), any(Instant.class))).thenReturn(0);
+
+        assertEquals(0, relayService.requeueFailed());
+    }
+
     private EmailOutboxMessage outboxMessage() {
         EmailOutboxMessage message = new EmailOutboxMessage();
         message.setEventId(UUID.randomUUID().toString());
