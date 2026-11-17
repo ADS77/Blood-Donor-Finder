@@ -1,6 +1,7 @@
 package com.bd.blooddonorfinder.repository;
 
 import com.bd.blooddonorfinder.model.BloodRequest;
+import com.bd.blooddonorfinder.model.enums.RequestStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +42,9 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
     /** Loads the requester and the accepted donor for identity checks. */
     @EntityGraph(attributePaths = {"requester", "acceptedDonor"})
     Optional<BloodRequest> findWithParticipantsById(UUID id);
+
+    /** In-flight requests (PENDING/ACCEPTED/PENDING_APPROVAL/DISPUTED) for one requester. */
+    long countByRequester_IdAndStatusIn(UUID requesterId, Collection<RequestStatus> statuses);
 
     /**
      * Donor marks the donation complete: ACCEPTED → PENDING_APPROVAL, only when

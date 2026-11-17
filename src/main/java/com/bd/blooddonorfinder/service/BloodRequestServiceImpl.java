@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -34,6 +35,14 @@ public class BloodRequestServiceImpl implements BloodRequestService {
     @Value("${app.request.ttl-hours.critical:6}")
     private long criticalTtlHours;
 
+    /**
+     * Amplification guard: every PENDING request feeds the escalation ladder
+     * (re-broadcasts to widening donor circles). Without a cap one account
+     * could fan out unlimited alert waves.
+     */
+    @Value("${app.request.max-active-per-requester:3}")
+    private int maxActiveRequestsPerRequester;
+
     public BloodRequestServiceImpl(BloodRequestRepository bloodRequestRepository, UserRepository userRepository) {
         this.bloodRequestRepository = bloodRequestRepository;
         this.userRepository = userRepository;
@@ -44,6 +53,19 @@ public class BloodRequestServiceImpl implements BloodRequestService {
     public RestApiResponse<BloodRequestViewDto> createBloodRequest(UUID requesterId, BloodRequestDto bloodRequestDto) {
         User requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        // Amplification guard: escalation re-broadcasts make each new request
+        // cost notifications to many donors — bound the in-flight count.
+        long active = bloodRequestRepository.countByRequester_IdAndStatusIn(
+                requesterId,
+                List.of(RequestStatus.PENDING, RequestStatus.ACCEPTED,
+                        RequestStatus.PENDING_APPROVAL, RequestStatus.DISPUTED));
+        if (active >= maxActiveRequestsPerRequester) {
+            log.warn("Request creation blocked for requester {}: {} request(s) already in flight",
+                    requesterId, active);
+            throw new AuthException(ErrorCode.RATE_LIMITED,
+                    "You already have " + active + " blood request(s) in flight — resolve or cancel one first");
+        }
 
         BloodRequest bloodRequest = new BloodRequest();
         bloodRequest.setRequester(requester);
