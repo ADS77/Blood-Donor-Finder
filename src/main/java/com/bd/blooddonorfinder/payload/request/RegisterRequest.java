@@ -3,6 +3,7 @@ package com.bd.blooddonorfinder.payload.request;
 import com.bd.blooddonorfinder.model.common.GeoLocation;
 import com.bd.blooddonorfinder.model.enums.BloodGroup;
 import com.bd.blooddonorfinder.validator.annotations.ValidPassword;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -46,5 +47,11 @@ public class RegisterRequest implements Serializable {
     @JsonProperty("geo_location")
     private GeoLocation geoLocation;
 
+    /**
+     * Dead on purpose: roles are assigned server-side (ROLE_DONOR on
+     * verification). Ignored so a future refactor cannot wire client input
+     * into role assignment (privilege escalation).
+     */
+    @JsonIgnore
     private String role;
 }

@@ -5,6 +5,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -33,9 +36,15 @@ public class GeoLocation implements Serializable {
     private String country;
 
     @Column(name = "latitude", precision = 10, scale = 6)
+    @DecimalMin(value = "-90.0", message = "latitude must be between -90 and 90")
+    @DecimalMax(value = "90.0", message = "latitude must be between -90 and 90")
+    @Digits(integer = 3, fraction = 6, message = "latitude has too many digits")
     private BigDecimal latitude;
 
     @Column(name = "longitude", precision = 10, scale = 6)
+    @DecimalMin(value = "-180.0", message = "longitude must be between -180 and 180")
+    @DecimalMax(value = "180.0", message = "longitude must be between -180 and 180")
+    @Digits(integer = 4, fraction = 6, message = "longitude has too many digits")
     private BigDecimal longitude;
 
     @Column(length = 20)

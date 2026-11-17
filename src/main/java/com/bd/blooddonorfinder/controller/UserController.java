@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.controller;
 
 import com.bd.blooddonorfinder.model.common.GeoLocation;
 import com.bd.blooddonorfinder.model.common.User;
+import com.bd.blooddonorfinder.model.enums.GeoStatus;
 import com.bd.blooddonorfinder.payload.request.LocationUpdateRequest;
 import com.bd.blooddonorfinder.payload.request.UpdateProfileRequest;
 import com.bd.blooddonorfinder.payload.response.LocationUpdateResponse;
@@ -71,6 +72,7 @@ public class UserController {
             GeoLocation previousGeo = existingUser.getGeoLocation();
             Instant previousStamp = previousGeo != null ? previousGeo.getGeoUpdatedAt() : null;
             Instant previousReconfirm = previousGeo != null ? previousGeo.getGeoReconfirmRequestedAt() : null;
+            GeoStatus previousStatus = previousGeo != null ? previousGeo.getGeoStatus() : null;
             coordinatesChanged = hasNewCoordinates(previousGeo, request.getGeoLocation());
             existingUser.setGeoLocation(request.getGeoLocation());
             if (coordinatesChanged) {
@@ -78,11 +80,14 @@ public class UserController {
                 // profile endpoint renews the freshness stamp and re-enters ES sync.
                 existingUser.getGeoLocation().setGeoUpdatedAt(Instant.now());
                 existingUser.getGeoLocation().setGeoReconfirmRequestedAt(null);
+                existingUser.getGeoLocation().setGeoStatus(GeoStatus.PENDING);
             } else {
-                // Preserve server-owned freshness stamps — a client-supplied
-                // geoUpdatedAt would let donors spoof freshness forever.
+                // Preserve server-owned state — a client-supplied geoUpdatedAt
+                // would let donors spoof freshness forever, and a client-supplied
+                // geoStatus would let them pre-confirm an unverified location.
                 existingUser.getGeoLocation().setGeoUpdatedAt(previousStamp);
                 existingUser.getGeoLocation().setGeoReconfirmRequestedAt(previousReconfirm);
+                existingUser.getGeoLocation().setGeoStatus(previousStatus);
             }
         }
 

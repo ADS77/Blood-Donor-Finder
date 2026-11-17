@@ -2,6 +2,7 @@ package com.bd.blooddonorfinder.model.common;
 
 import com.bd.blooddonorfinder.model.PiiToken;
 import com.bd.blooddonorfinder.model.enums.BloodGroup;
+import com.bd.blooddonorfinder.model.enums.GeoStatus;
 import com.bd.blooddonorfinder.payload.request.RegisterRequest;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -146,6 +147,12 @@ public class User {
         user.setEmailToken(emailToken);
         user.setIsAvailable(true);
         user.setVersion(1L);
+        // geoStatus is server-owned: only the enrichment pipeline (or the
+        // device-update flow) confirms a position. A client-supplied
+        // geoStatus must never pre-confirm a self-reported location.
+        if (user.getGeoLocation() != null) {
+            user.getGeoLocation().setGeoStatus(GeoStatus.PENDING);
+        }
         return user;
     }
 
