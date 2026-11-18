@@ -51,7 +51,10 @@ public class BloodRequest implements Serializable {
     @Column(name = "required_quantity")
     private Integer requiredQuantity;
 
-    /** Donor who accepted this request — set atomically on first accept (chat gate). */
+    /**
+     * Donor who accepted this request — set atomically on first accept. This
+     * is the request-side participant record; a chat may be opened later.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "accepted_donor_id")
     private User acceptedDonor;

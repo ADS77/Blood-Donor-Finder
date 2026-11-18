@@ -5,6 +5,7 @@ import com.bd.blooddonorfinder.exception.UserNotFoundException;
 import com.bd.blooddonorfinder.exception.enums.ErrorCode;
 import com.bd.blooddonorfinder.model.BloodRequest;
 import com.bd.blooddonorfinder.model.common.User;
+import com.bd.blooddonorfinder.model.enums.NotificationType;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
 import com.bd.blooddonorfinder.model.enums.RequestUrgency;
 import com.bd.blooddonorfinder.payload.request.BloodRequestDto;
@@ -14,12 +15,13 @@ import com.bd.blooddonorfinder.repository.BloodRequestRepository;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class BloodRequestServiceImpl implements BloodRequestService {
     private final BloodRequestRepository bloodRequestRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Value("${app.request.ttl-hours.routine:72}")
     private long routineTtlHours;
@@ -43,9 +46,12 @@ public class BloodRequestServiceImpl implements BloodRequestService {
     @Value("${app.request.max-active-per-requester:3}")
     private int maxActiveRequestsPerRequester;
 
-    public BloodRequestServiceImpl(BloodRequestRepository bloodRequestRepository, UserRepository userRepository) {
+    public BloodRequestServiceImpl(BloodRequestRepository bloodRequestRepository,
+                                   UserRepository userRepository,
+                                   NotificationService notificationService) {
         this.bloodRequestRepository = bloodRequestRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -119,6 +125,55 @@ public class BloodRequestServiceImpl implements BloodRequestService {
         log.info("Request {} cancelled by requester {}", requestId, requesterId);
 
         return RestApiResponse.success(BloodRequestViewDto.from(request), "Request cancelled");
+    }
+
+    /**
+     * First-donor-wins claim. The chat is deliberately NOT created here: the
+     * request and chat lifecycles are independent, and opening a conversation
+     * is an explicit, idempotent chat-API operation. The requester is notified
+     * that the request was accepted and that a chat is now available.
+     */
+    @Override
+    @Transactional
+    public RestApiResponse<BloodRequestViewDto> acceptRequest(UUID requestId, UUID donorId) {
+        User donor = userRepository.findById(donorId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        if (!Boolean.TRUE.equals(donor.getIsVerified())) {
+            throw new AuthException(ErrorCode.USER_NOT_VERIFIED,
+                    "Only verified donors can accept requests");
+        }
+
+        BloodRequest request = bloodRequestRepository.findWithParticipantsById(requestId)
+                .orElseThrow(() -> new AuthException(ErrorCode.REQUEST_NOT_FOUND, "Request not found"));
+        if (request.getRequester().getId().equals(donorId)) {
+            throw new AuthException(ErrorCode.INVALID_REQUEST, "You cannot accept your own request");
+        }
+
+        // Atomic conditional UPDATE: exactly one concurrent accepter wins.
+        Instant acceptedAt = Instant.now();
+        int accepted = bloodRequestRepository.acceptAtomically(requestId, donor, acceptedAt);
+        if (accepted == 0) {
+            throw new AuthException(ErrorCode.REQUEST_ALREADY_ACCEPTED,
+                    "This request has already been accepted by another donor");
+        }
+        // The bulk update bypasses the persistence context. Mirror it on the
+        // managed entity so a later full-column flush cannot write the stale
+        // PENDING status back over the transition.
+        request.setStatus(RequestStatus.ACCEPTED);
+        request.setAcceptedDonor(donor);
+        request.setAcceptedAt(acceptedAt);
+
+        notificationService.notify(request.getRequester().getId(), NotificationType.REQUEST_ACCEPTED,
+                requestId, Map.of(
+                        "requestId", requestId.toString(),
+                        "donorId", donor.getId().toString(),
+                        "donorName", donor.getFirstName() != null ? donor.getFirstName() : "",
+                        "chatAvailable", true
+                ));
+
+        log.info("Request={} accepted by donor={} — chat can now be opened on demand", requestId, donorId);
+        return RestApiResponse.success(BloodRequestViewDto.from(request),
+                "Request accepted — you can now start a chat");
     }
 
     private long ttlSeconds(RequestUrgency urgency) {

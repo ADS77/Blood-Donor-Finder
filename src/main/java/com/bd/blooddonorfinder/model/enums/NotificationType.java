@@ -2,6 +2,8 @@ package com.bd.blooddonorfinder.model.enums;
 
 public enum NotificationType {
     CHAT_MESSAGE,
+    /** A request participant opened the private conversation. */
+    CHAT_OPENED,
     REQUEST_ACCEPTED,
     LOCATION_RECONFIRMATION,
     /** Donor marked the donation complete — requester should approve. */

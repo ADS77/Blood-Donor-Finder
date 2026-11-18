@@ -1,6 +1,5 @@
 package com.bd.blooddonorfinder.controller;
 
-import com.bd.blooddonorfinder.exception.RateLimitExceededException;
 import com.bd.blooddonorfinder.payload.request.SendMessageRequest;
 import com.bd.blooddonorfinder.payload.response.ChatMessageDto;
 import com.bd.blooddonorfinder.payload.response.ChatMessagesResponse;
@@ -39,6 +38,25 @@ public class ChatController {
 
     public ChatController(ChatService chatService) {
         this.chatService = chatService;
+    }
+
+    /**
+     * Opens (or returns) the conversation for an accepted request. This is the
+     * UI's chat option after accept: the request state machine has already
+     * finished, and the chat state machine starts here — only if the user
+     * chooses to talk. Idempotent; safe to call from either participant.
+     */
+    @PreAuthorize("@authz.isAuthenticated(authentication)")
+    @PostMapping("/requests/{requestId}")
+    public ResponseEntity<RestApiResponse<ChatSummaryDto>> openChat(
+            @PathVariable UUID requestId,
+            Authentication authentication) {
+        UUID callerId = requireCaller(authentication);
+        if (callerId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        ChatSummaryDto chat = chatService.openChat(requestId, callerId);
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK, "Chat ready", chat));
     }
 
     @PreAuthorize("@authz.isAuthenticated(authentication)")

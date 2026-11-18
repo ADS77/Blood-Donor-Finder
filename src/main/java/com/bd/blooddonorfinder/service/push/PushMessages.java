@@ -16,6 +16,7 @@ final class PushMessages {
     static String title(NotificationType type, Map<String, Object> payload) {
         return switch (type) {
             case CHAT_MESSAGE -> name(payload, "senderName") + " sent you a message";
+            case CHAT_OPENED -> name(payload, "initiatorName") + " started a chat with you";
             case REQUEST_ACCEPTED -> "A donor accepted your blood request 🩸";
             case LOCATION_RECONFIRMATION -> "Confirm your location";
             case DONATION_COMPLETED -> "Donation marked complete — please confirm";
@@ -29,8 +30,9 @@ final class PushMessages {
     static String body(NotificationType type, Map<String, Object> payload) {
         return switch (type) {
             case CHAT_MESSAGE -> str(payload, "preview", "Tap to open the chat.");
+            case CHAT_OPENED -> "Open the app to say hello and coordinate the donation.";
             case REQUEST_ACCEPTED -> name(payload, "donorName")
-                    + " is on the way — the chat is open.";
+                    + " is on the way — you can start a chat when you're ready.";
             case LOCATION_RECONFIRMATION -> "Confirm your position so nearby patients can find you.";
             case DONATION_COMPLETED -> "Please approve the donation so the donor gets credit.";
             case DONATION_APPROVED -> "Your donation count and rating have been updated.";

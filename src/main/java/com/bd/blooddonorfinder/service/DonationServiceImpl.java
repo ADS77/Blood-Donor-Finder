@@ -3,9 +3,7 @@ package com.bd.blooddonorfinder.service;
 import com.bd.blooddonorfinder.exception.AuthException;
 import com.bd.blooddonorfinder.exception.enums.ErrorCode;
 import com.bd.blooddonorfinder.model.BloodRequest;
-import com.bd.blooddonorfinder.model.chat.Chat;
 import com.bd.blooddonorfinder.model.donation.DonationRecord;
-import com.bd.blooddonorfinder.model.enums.ChatStatus;
 import com.bd.blooddonorfinder.model.enums.NotificationType;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
 import com.bd.blooddonorfinder.payload.request.DonationApprovalRequest;
@@ -14,7 +12,6 @@ import com.bd.blooddonorfinder.payload.request.DonationDisputeRequest;
 import com.bd.blooddonorfinder.payload.response.DonationDto;
 import com.bd.blooddonorfinder.payload.response.DonorStatsDto;
 import com.bd.blooddonorfinder.repository.BloodRequestRepository;
-import com.bd.blooddonorfinder.repository.ChatRepository;
 import com.bd.blooddonorfinder.repository.DonationRecordRepository;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -46,20 +43,20 @@ public class DonationServiceImpl implements DonationService {
     private final BloodRequestRepository bloodRequestRepository;
     private final DonationRecordRepository donationRecordRepository;
     private final UserRepository userRepository;
-    private final ChatRepository chatRepository;
+    private final ChatService chatService;
     private final NotificationService notificationService;
     private final long futureToleranceSeconds;
 
     public DonationServiceImpl(BloodRequestRepository bloodRequestRepository,
                                DonationRecordRepository donationRecordRepository,
                                UserRepository userRepository,
-                               ChatRepository chatRepository,
+                               ChatService chatService,
                                NotificationService notificationService,
                                @Value("${app.donation.future-tolerance-seconds:300}") long futureToleranceSeconds) {
         this.bloodRequestRepository = bloodRequestRepository;
         this.donationRecordRepository = donationRecordRepository;
         this.userRepository = userRepository;
-        this.chatRepository = chatRepository;
+        this.chatService = chatService;
         this.notificationService = notificationService;
         this.futureToleranceSeconds = futureToleranceSeconds;
     }
@@ -134,7 +131,7 @@ public class DonationServiceImpl implements DonationService {
         record.setReview(review);
         record = donationRecordRepository.save(record);
 
-        closeChat(requestId);
+        chatService.closeChatForRequest(requestId);
 
         log.info("Request={} donation approved by requester={} (rating={})", requestId, requesterId, rating);
 
@@ -268,7 +265,7 @@ public class DonationServiceImpl implements DonationService {
         record.setDonatedAt(donatedAt);
         record = donationRecordRepository.save(record);
 
-        closeChat(requestId);
+        chatService.closeChatForRequest(requestId);
 
         notificationService.notify(request.getAcceptedDonor().getId(),
                 NotificationType.DONATION_APPROVED, record.getId(), payload);
@@ -302,15 +299,6 @@ public class DonationServiceImpl implements DonationService {
         log.debug("Cannot {} request in state {}", action, current);
         return new AuthException(ErrorCode.INVALID_REQUEST,
                 "Donation cannot be " + action + "d from state " + current);
-    }
-
-    private void closeChat(UUID requestId) {
-        chatRepository.findByRequestId(requestId).ifPresent(chat -> {
-            if (chat.getStatus() == ChatStatus.ACTIVE) {
-                chat.setStatus(ChatStatus.CLOSED);
-                chatRepository.save(chat);
-            }
-        });
     }
 
     private DonationDto toDto(UUID requestId, BloodRequest request, Instant donatedAt,

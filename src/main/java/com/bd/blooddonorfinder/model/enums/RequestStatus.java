@@ -11,5 +11,15 @@ public enum RequestStatus {
     DISPUTED,
     /** TTL passed with no donor accepting — set by the escalation worker. */
     EXPIRED,
-    CANCELLED
+    CANCELLED;
+
+    /**
+     * Whether the request lifecycle permits a private conversation. Chat is a
+     * separate state machine: this only states eligibility, not whether a chat
+     * already exists. A donor accepting a request moves it into the eligible
+     * range; the chat is created later, on demand, by either participant.
+     */
+    public boolean allowsChat() {
+        return this == ACCEPTED || this == PENDING_APPROVAL || this == DISPUTED;
+    }
 }

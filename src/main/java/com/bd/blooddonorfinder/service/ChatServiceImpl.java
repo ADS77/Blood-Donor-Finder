@@ -11,15 +11,12 @@ import com.bd.blooddonorfinder.model.chat.ChatMessage;
 import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.ChatStatus;
 import com.bd.blooddonorfinder.model.enums.NotificationType;
-import com.bd.blooddonorfinder.model.enums.RequestStatus;
-import com.bd.blooddonorfinder.payload.response.AcceptRequestResponse;
 import com.bd.blooddonorfinder.payload.response.ChatMessageDto;
 import com.bd.blooddonorfinder.payload.response.ChatMessagesResponse;
 import com.bd.blooddonorfinder.payload.response.ChatSummaryDto;
 import com.bd.blooddonorfinder.repository.BloodRequestRepository;
 import com.bd.blooddonorfinder.repository.ChatMessageRepository;
 import com.bd.blooddonorfinder.repository.ChatRepository;
-import com.bd.blooddonorfinder.repository.UserRepository;
 import com.bd.blooddonorfinder.service.chat.ChatPushService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,7 +49,6 @@ public class ChatServiceImpl implements ChatService {
     private final ChatRepository chatRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final BloodRequestRepository bloodRequestRepository;
-    private final UserRepository userRepository;
     private final ChatPushService pushService;
     private final NotificationService notificationService;
     private final GenericKafkaEventProducer eventProducer;
@@ -64,7 +60,6 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(ChatRepository chatRepository,
                            ChatMessageRepository chatMessageRepository,
                            BloodRequestRepository bloodRequestRepository,
-                           UserRepository userRepository,
                            ChatPushService pushService,
                            NotificationService notificationService,
                            GenericKafkaEventProducer eventProducer,
@@ -72,7 +67,6 @@ public class ChatServiceImpl implements ChatService {
         this.chatRepository = chatRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.bloodRequestRepository = bloodRequestRepository;
-        this.userRepository = userRepository;
         this.pushService = pushService;
         this.notificationService = notificationService;
         this.eventProducer = eventProducer;
@@ -81,62 +75,79 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public AcceptRequestResponse acceptRequest(UUID requestId, UUID donorId) {
-        User donor = userRepository.findById(donorId)
-                .orElseThrow(() -> new AuthException(ErrorCode.USER_NOT_FOUND, "User not found"));
-        if (!Boolean.TRUE.equals(donor.getIsVerified())) {
-            throw new AuthException(ErrorCode.USER_NOT_VERIFIED, "Only verified donors can accept requests");
+    public ChatSummaryDto openChat(UUID requestId, UUID callerId) {
+        BloodRequest request = bloodRequestRepository.findWithParticipantsById(requestId)
+                .orElseThrow(() -> new AuthException(ErrorCode.REQUEST_NOT_FOUND, "Request not found"));
+
+        UUID requesterId = request.getRequester().getId();
+        UUID acceptedDonorId = request.getAcceptedDonor() != null
+                ? request.getAcceptedDonor().getId() : null;
+        boolean callerIsRequester = requesterId.equals(callerId);
+        boolean callerIsDonor = callerId.equals(acceptedDonorId);
+        if (!callerIsRequester && !callerIsDonor) {
+            // IDOR guard: non-participants cannot even learn that the request exists
+            log.warn("Non-participant {} attempted to open chat for request {}", callerId, requestId);
+            throw new AuthException(ErrorCode.REQUEST_NOT_FOUND, "Request not found");
         }
-        BloodRequest request = bloodRequestRepository.findById(requestId)
-                .orElseThrow(() -> new AuthException(ErrorCode.CHAT_NOT_FOUND, "Blood request not found"));
-        if (request.getRequester().getId().equals(donorId)) {
-            throw new AuthException(ErrorCode.CHAT_FORBIDDEN, "You cannot accept your own request");
+
+        // Opening is idempotent: an existing conversation is always returned,
+        // even if the request has since reached a terminal state.
+        Chat existing = chatRepository.findByRequestId(requestId).orElse(null);
+        if (existing != null) {
+            return toSummary(existing, callerId);
         }
 
-        // atomic first-donor-wins; concurrent accepters lose here
-        int accepted = bloodRequestRepository.acceptAtomically(requestId, donor, Instant.now());
-        if (accepted == 0) {
-            throw new AuthException(ErrorCode.REQUEST_ALREADY_ACCEPTED,
-                    "This request has already been accepted by another donor");
+        if (acceptedDonorId == null || request.getStatus() == null || !request.getStatus().allowsChat()) {
+            throw new AuthException(ErrorCode.INVALID_REQUEST,
+                    "Chat is not available while the request is " + request.getStatus());
         }
-        // The bulk update bypasses the persistence context; mutating the managed
-        // entity below (acceptedDonor) would make Hibernate flush a full-row
-        // UPDATE carrying the stale status=PENDING, silently reverting the
-        // transition. Mirror the bulk update onto the managed copy so the flush
-        // rewrites the same state instead of clobbering it.
-        request.setStatus(RequestStatus.ACCEPTED);
-        request.setAcceptedDonor(donor);
-        request.setAcceptedAt(Instant.now());
 
-        // idempotent on event-replay: a chat for the request may already exist
-        Chat chat = chatRepository.findByRequestId(requestId)
-                .orElseGet(() -> chatRepository.save(newChat(request, donor)));
+        // The unique request_id is the arbiter: concurrent opens by the two
+        // participants converge on one row instead of creating duplicates. The
+        // insert also re-checks eligibility at write time, closing the gap
+        // between the read above and a concurrent FULFILLED/EXPIRED transition.
+        LocalDateTime now = LocalDateTime.now();
+        int inserted = chatRepository.insertIfAbsent(UUID.randomUUID(), requestId,
+                requesterId, acceptedDonorId, now);
 
-        User requester = request.getRequester();
-        // Facebook-style: notification row + realtime badge push — no email.
-        // (acceptRequest is @Transactional; notify() registers post-commit delivery)
-        notificationService.notify(requester.getId(), NotificationType.REQUEST_ACCEPTED, chat.getId(),
-                Map.of(
-                        "chatId", String.valueOf(chat.getId()),
-                        "donorId", String.valueOf(donor.getId()),
-                        "donorName", donor.getFirstName() != null ? donor.getFirstName() : ""
-                ));
+        Chat chat = chatRepository.findByRequestId(requestId).orElse(null);
+        if (chat == null) {
+            // No row was inserted and none existed: the request left the
+            // chat-eligible states between the check and the conditional insert.
+            var currentStatus = bloodRequestRepository.findById(requestId)
+                    .map(BloodRequest::getStatus).orElse(null);
+            throw new AuthException(ErrorCode.INVALID_REQUEST,
+                    "Chat is not available while the request is " + currentStatus);
+        }
 
-        // realtime: tell the requester a chat just opened (if they're online)
-        pushService.pushAfterCommit(requester.getId(), CHAT_EVENTS_DESTINATION,
-                new ChatEventPayload("CHAT_OPENED", chat.getId()));
+        if (inserted == 1) {
+            UUID counterpartId = counterpartId(chat, callerId);
+            User initiator = callerIsRequester ? request.getRequester() : request.getAcceptedDonor();
+            notificationService.notify(counterpartId, NotificationType.CHAT_OPENED, chat.getId(),
+                    Map.of(
+                            "chatId", chat.getId().toString(),
+                            "requestId", requestId.toString(),
+                            "initiatorId", callerId.toString(),
+                            "initiatorName", initiator.getFirstName() != null ? initiator.getFirstName() : ""
+                    ));
+            // Realtime: refresh the counterpart's chat list even while online.
+            pushService.pushAfterCommit(counterpartId, CHAT_EVENTS_DESTINATION,
+                    new ChatEventPayload("CHAT_OPENED", chat.getId()));
+            log.info("Chat={} opened for request={} by user={}", chat.getId(), requestId, callerId);
+        }
 
-        log.info("Request={} accepted by donor={} — chat={} opened", requestId, donorId, chat.getId());
-        return new AcceptRequestResponse(requestId, chat.getId(),
-                requester.getId(), donorId, RequestStatus.ACCEPTED.name());
+        return toSummary(chat, callerId);
     }
 
-    private Chat newChat(BloodRequest request, User donor) {
-        Chat chat = new Chat();
-        chat.setRequest(request);
-        chat.setRequester(request.getRequester());
-        chat.setDonor(donor);
-        return chat;
+    @Override
+    @Transactional
+    public void closeChatForRequest(UUID requestId) {
+        chatRepository.findByRequestId(requestId).ifPresent(chat -> {
+            if (ChatStatus.ACTIVE.equals(chat.getStatus())) {
+                chat.setStatus(ChatStatus.CLOSED);
+                chatRepository.save(chat);
+            }
+        });
     }
 
     @Override
@@ -144,21 +155,32 @@ public class ChatServiceImpl implements ChatService {
         List<Chat> chats = chatRepository.findMyChats(userId, PageRequest.of(0, 50));
         List<ChatSummaryDto> summaries = new ArrayList<>(chats.size());
         for (Chat chat : chats) {
-            User counterpart = chat.getRequester().getId().equals(userId)
-                    ? chat.getDonor() : chat.getRequester();
-            ChatMessage last = chatMessageRepository
-                    .findFirstByChatIdOrderByCreatedAtDesc(chat.getId()).orElse(null);
-            summaries.add(new ChatSummaryDto(
-                    chat.getId(),
-                    chat.getRequest().getId(),
-                    counterpart.getId(),
-                    counterpart.getFirstName() + " " + counterpart.getLastName(),
-                    last != null ? last.getBody() : null,
-                    last != null ? toEpoch(last.getCreatedAt()) : null,
-                    chatMessageRepository.countUnread(chat.getId(), userId),
-                    chat.getStatus().name()));
+            summaries.add(toSummary(chat, userId));
         }
         return summaries;
+    }
+
+    private ChatSummaryDto toSummary(Chat chat, UUID userId) {
+        User counterpart = chat.getRequester().getId().equals(userId)
+                ? chat.getDonor() : chat.getRequester();
+        ChatMessage last = chatMessageRepository
+                .findFirstByChatIdOrderByCreatedAtDesc(chat.getId()).orElse(null);
+        return new ChatSummaryDto(
+                chat.getId(),
+                chat.getRequest().getId(),
+                counterpart.getId(),
+                displayName(counterpart),
+                last != null ? last.getBody() : null,
+                last != null ? toEpoch(last.getCreatedAt()) : null,
+                chatMessageRepository.countUnread(chat.getId(), userId),
+                chat.getStatus().name());
+    }
+
+    private static String displayName(User user) {
+        String first = user.getFirstName() != null ? user.getFirstName() : "";
+        String last = user.getLastName() != null ? user.getLastName() : "";
+        String name = (first + " " + last).trim();
+        return name.isEmpty() ? "Unknown" : name;
     }
 
     @Override

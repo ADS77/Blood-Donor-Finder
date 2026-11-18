@@ -135,8 +135,9 @@ public class NotificationDigestWorker {
         return switch (notification.getType()) {
             case CHAT_MESSAGE -> (senderName != null ? senderName + ": " : "New message: ")
                     + (preview != null ? preview : "");
+            case CHAT_OPENED -> "A chat was opened for one of your blood requests — reply when you're ready.";
             case REQUEST_ACCEPTED -> "Good news — a donor accepted your blood request"
-                    + (senderName != null ? " (" + senderName + ")" : "") + ". A chat is open.";
+                    + (senderName != null ? " (" + senderName + ")" : "") + ". You can start a chat from the request.";
             case LOCATION_RECONFIRMATION -> "Please confirm your current location so patients nearby can find you.";
             case DONATION_COMPLETED -> "Your donor marked the blood donation as complete — please confirm it in the app.";
             case DONATION_APPROVED -> "Donation confirmed! Your donation count and rating have been updated.";

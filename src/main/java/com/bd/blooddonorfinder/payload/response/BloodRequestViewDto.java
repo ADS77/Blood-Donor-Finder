@@ -12,8 +12,11 @@ import java.util.UUID;
  * (token references, credentials fields, lazy associations) and are never
  * serialized to clients.
  *
- * @param requester owner summary only — contact happens through the chat that
- *                  opens when a donor accepts
+ * @param requester     owner summary only — contact happens through the chat
+ *                      opened after a donor accepts
+ * @param chatAvailable whether the caller may open a conversation for this
+ *                      request. It is a capability, not proof that a chat row
+ *                      exists; opening is idempotent and stays in the chat API.
  */
 public record BloodRequestViewDto(
         UUID id,
@@ -26,7 +29,8 @@ public record BloodRequestViewDto(
         RequesterView requester,
         UUID acceptedDonorId,
         LocalDateTime requestTime,
-        LocalDateTime expiresAt
+        LocalDateTime expiresAt,
+        boolean chatAvailable
 ) {
 
     /** Lat/lon plus the human-readable area. Neighborhood precision only. */
@@ -67,7 +71,10 @@ public record BloodRequestViewDto(
                         owner.getBloodGroup() != null ? owner.getBloodGroup().name() : null),
                 request.getAcceptedDonor() != null ? request.getAcceptedDonor().getId() : null,
                 request.getRequestTime(),
-                request.getExpiresAt()
+                request.getExpiresAt(),
+                request.getStatus() != null
+                        && request.getStatus().allowsChat()
+                        && request.getAcceptedDonor() != null
         );
     }
 }

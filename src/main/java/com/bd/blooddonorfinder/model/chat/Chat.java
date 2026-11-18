@@ -11,7 +11,8 @@ import java.util.UUID;
 
 /**
  * A private channel between a requester and the donor who accepted their blood
- * request. Created exclusively by the accept flow — one chat per request.
+ * request. Created on demand through {@code ChatService.openChat}, never as a
+ * side effect of acceptance — one chat per request.
  */
 @Entity
 @Data

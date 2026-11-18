@@ -15,4 +15,12 @@ public interface BloodRequestService {
      * are rejected.
      */
     RestApiResponse<BloodRequestViewDto> cancelRequest(UUID requesterId, UUID requestId);
+
+    /**
+     * A verified donor claims a PENDING request: PENDING → ACCEPTED, first
+     * donor wins. This transition is complete on its own — it does not create
+     * a chat. Both participants may open the conversation later through the
+     * chat API, any time the request status {@link com.bd.blooddonorfinder.model.enums.RequestStatus#allowsChat() allows it}.
+     */
+    RestApiResponse<BloodRequestViewDto> acceptRequest(UUID requestId, UUID donorId);
 }

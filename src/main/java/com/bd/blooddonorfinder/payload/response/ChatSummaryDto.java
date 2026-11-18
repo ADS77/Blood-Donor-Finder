@@ -2,7 +2,7 @@ package com.bd.blooddonorfinder.payload.response;
 
 import java.util.UUID;
 
-/** Chat inbox entry for one side of a request-accept conversation. */
+/** Chat inbox entry for one side of a request conversation. */
 public record ChatSummaryDto(
         UUID chatId,
         UUID requestId,
