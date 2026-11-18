@@ -117,10 +117,22 @@
     </appender>
 
 
+    <!--
+      Logstash is optional developer/observability infrastructure. The appender
+      is only attached when the `logstash` Spring profile is active, so a plain
+      local run no longer retries a dead localhost:5000 connection every 30s.
+      Enable with SPRING_PROFILES_ACTIVE=dev,logstash (and optionally override
+      LOGSTASH_DESTINATION, e.g. logstash:5000 inside Compose).
+    -->
+    <springProperty scope="context" name="LOGSTASH_DESTINATION"
+                    source="LOGSTASH_DESTINATION" defaultValue="localhost:5000"/>
+    <springProperty scope="context" name="LOGSTASH_ENVIRONMENT"
+                    source="LOGSTASH_ENVIRONMENT" defaultValue="development"/>
+
     <appender name="LOGSTASH"
               class="net.logstash.logback.appender.LogstashTcpSocketAppender">
 
-        <destination>localhost:5000</destination>
+        <destination>${LOGSTASH_DESTINATION}</destination>
 
         <encoder
                 class="net.logstash.logback.encoder.LogstashEncoder">
@@ -128,7 +140,7 @@
             <customFields>
                 {
                 "application":"blood-donor-finder",
-                "environment":"production"
+                "environment":"${LOGSTASH_ENVIRONMENT}"
                 }
             </customFields>
 
@@ -158,16 +170,40 @@
             level="DEBUG"/>
 
 
-    <root level="INFO">
+    <!--
+      Default: console + rolling files only. Logstash is optional
+      observability infrastructure, so the appender is not attached unless
+      the `logstash` profile is explicitly enabled.
+    -->
+    <springProfile name="!logstash">
 
-        <appender-ref ref="CONSOLE"/>
+        <root level="INFO">
 
-        <appender-ref ref="APP_FILE"/>
+            <appender-ref ref="CONSOLE"/>
 
-        <appender-ref ref="ERROR_FILE"/>
+            <appender-ref ref="APP_FILE"/>
 
-        <appender-ref ref="LOGSTASH"/>
+            <appender-ref ref="ERROR_FILE"/>
 
-    </root>
+        </root>
+
+    </springProfile>
+
+    <!-- Enable with SPRING_PROFILES_ACTIVE=dev,logstash (Compose: logstash:5000). -->
+    <springProfile name="logstash">
+
+        <root level="INFO">
+
+            <appender-ref ref="CONSOLE"/>
+
+            <appender-ref ref="APP_FILE"/>
+
+            <appender-ref ref="ERROR_FILE"/>
+
+            <appender-ref ref="LOGSTASH"/>
+
+        </root>
+
+    </springProfile>
 
 </configuration>
