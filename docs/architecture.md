@@ -7,8 +7,8 @@
 
 Sondhan is a Spring Boot backend for finding nearby blood donors. It handles
 donor registration, OTP verification, JWT authentication, donor search,
-blood-request creation, urgent-request escalation, request acceptance with
-private chat, donation completion, document verification, a notification center
+blood-request creation, urgent-request escalation, request acceptance, an
+on-demand private chat, donation completion, document verification, a notification center
 with a daily email digest, audit logging, and an event-driven search read model.
 
 The short version:
@@ -171,7 +171,7 @@ erDiagram
     BLOOD_REQUEST ||--o{ DONATION_HISTORY : "fulfilled by"
     APP_USER ||--o{ DONATION_HISTORY : "donor / recipient"
     APP_USER ||--o{ AUDIT_LOG : "acts in"
-    BLOOD_REQUEST ||--o| CHAT : "opens on accept"
+    BLOOD_REQUEST ||--o| CHAT : "opened on demand after accept"
     APP_USER ||--o{ CHAT : "requester / donor"
     CHAT ||--o{ CHAT_MESSAGE : "messages"
     BLOOD_REQUEST ||--o| DONATION_RECORD : "completed as"
@@ -348,12 +348,13 @@ unless the endpoint is marked public.
 | `POST` | `/api/user/update` | Authenticated | Backwards-compatible alias for `/me` (ignores any client-supplied user id) |
 | `POST` | `/api/user/location` | Authenticated | Publish a fresh device location (server-side throttle, Kafka fanout to ES) |
 | `POST` | `/api/blood-request/create` | Authenticated | Create a blood request owned by the caller |
-| `POST` | `/api/blood-request/{id}/accept` | `DONOR`, `ORG_ADMIN`, `SYSTEM_ADMIN` | Atomically accept an open request and open the private chat |
+| `POST` | `/api/blood-request/{id}/accept` | `DONOR`, `ORG_ADMIN`, `SYSTEM_ADMIN` | Atomically claim an open request (acceptance does not create a chat) |
 | `POST` | `/api/search/donors` | Authenticated | Elasticsearch donor page search |
 | `POST` | `/api/search/donors/nearby` | Authenticated | Expanding-radius nearby search (5→80 km, `search_after` pagination) |
 | `POST` | `/api/search/eligible-donors` | Authenticated | Find nearby donors who pass the eligibility filter |
 | `POST` | `/api/search/notify-near-by-donors` | `SYSTEM_ADMIN`, `ORG_ADMIN` | Queue donor-alert emails for nearby eligible donors |
 | `GET` | `/api/chat` | Authenticated (participant) | List the caller's chats |
+| `POST` | `/api/chat/requests/{requestId}` | Authenticated (participant) | Idempotently open the chat for an accepted request; returns the existing chat if already open |
 | `GET` | `/api/chat/{chatId}/messages` | Authenticated (participant) | Keyset message backfill |
 | `POST` | `/api/chat/{chatId}/messages` | Authenticated (participant) | Persist a message, then fan out over STOMP |
 | `POST` | `/api/chat/{chatId}/read` | Authenticated (participant) | Mark a chat read |
@@ -821,12 +822,28 @@ contract, until an endpoint and index bootstrap are wired.
 
 ### 11.4 Request accept and realtime chat
 
+Request acceptance and chat are **two independent state machines**:
+
+* **Request:** `PENDING → ACCEPTED → PENDING_APPROVAL → FULFILLED` (or
+  `DISPUTED` / `CANCELLED` / `EXPIRED`).
+* **Chat:** `absent → ACTIVE → CLOSED`, created on demand only when a
+  participant chooses to talk. Chat is never a side effect of acceptance.
+
 `POST /api/blood-request/{id}/accept` is **first-donor-wins**. A conditional
 `UPDATE ... WHERE status = 'PENDING'` claims the request and records the
-accepted donor; the loser gets `REQUEST_ALREADY_ACCEPTED`. The winner gets a
-single private `chat` row (idempotent: an existing chat for the request is
-reused), and the requester gets an in-app notification plus a realtime badge
-push. No email is sent at accept time.
+accepted donor; the loser gets `REQUEST_ALREADY_ACCEPTED`. The response is the
+request view with `chatAvailable = true`; the requester gets an in-app
+notification deep-linked to the request. No chat row is created and no email is
+sent at accept time, so a chat problem can never fail or partially complete an
+acceptance.
+
+When either participant taps the chat option, the client calls
+`POST /api/chat/requests/{requestId}`. The call is **idempotent**: it returns
+the existing conversation, or inserts one with `ON CONFLICT (request_id) DO
+NOTHING` so concurrent opens converge on a single row. The other participant
+gets a `CHAT_OPENED` notification and realtime chat-list push. Opening is
+allowed while the request is `ACCEPTED`, `PENDING_APPROVAL` or `DISPUTED`; an
+already-existing chat remains readable after the request closes.
 
 Messages are **REST-first**: `POST /api/chat/{chatId}/messages` persists the
 message, enforces participant-only access, applies a per-user Redis send rate
@@ -846,9 +863,14 @@ sequenceDiagram
 
     D->>A: POST /api/blood-request/{id}/accept
     A->>DB: UPDATE ... WHERE status='PENDING' (atomic)
-    A->>DB: INSERT chat (or reuse existing)
-    A->>DB: INSERT notification (requester)
-    A-->>D: 200 + chat id + donor name
+    A->>DB: INSERT notification (requester, reference=request)
+    A-->>D: 200 + request view (chatAvailable=true)
+    Note over C: Chat option appears; no chat row exists yet
+
+    D->>A: POST /api/chat/requests/{id} (optional)
+    A->>DB: INSERT chat ... ON CONFLICT DO NOTHING
+    A->>DB: INSERT notification (counterpart, CHAT_OPENED)
+    A-->>D: 200 + chat (new or existing)
     Note over A: after commit: local STOMP push +<br/>redis fanout envelope
 
     D->>A: POST /api/chat/{chatId}/messages
@@ -1159,3 +1181,4 @@ Recommended style:
 | 2026-11-16 | Added Redis GEO fast path for nearby search: confirmed geo writes also upsert the donor's position into a Redis GEO set; searches probe it first (one GEOSEARCH per radius) and hydrate ES docs by id, falling back to the ES expanding-radius loop whenever the set is cold or the request needs cursor pagination/availability filtering. Off by default, enabled in dev | §11.1, `DonorGeoRedisService` |
 | 2026-11-17 | Full API security audit. Fixed: (1) `GeoLocation` latitude/longitude are now range- and digit-validated at the model level, closing the register/profile paths that skipped device-update validation; (2) `geoStatus` is server-owned — forced `PENDING` at registration and on profile coordinate changes, preserved on no-change updates, so a client can neither pre-confirm a location nor spoof freshness; (3) `RegisterRequest.role` is `@JsonIgnore` (was already ignored; hardened for future refactors); (4) `/api/auth/resend-otp` unknown `user_id` now answers with the generic decoy "OTP sent" (it previously leaked existence via 404; decoy uses a non-throwing `findOptionalById` because catching `findById` inside the caller's transaction would mark it rollback-only); (5) blood-request creation capped at 3 in-flight per requester (`app.request.max-active-per-requester`, 429 otherwise) to bound the escalation-ladder notification amplification | §5, `GeoLocation`, `UserController`, `SondhanAuthService`, `BloodRequestServiceImpl` |
 | 2026-11-17 | Security audit accepted tradeoffs (documented, not changed): `IpRateLimitFilter` fails open on Redis outage (availability over strictness); no per-user chat-message rate limit (messages are 1:1 between request participants only); donor search is public by product design (sanitized, admin maintenance endpoints separately gated) | §5, `IpRateLimitFilter` |
+| 2026-11-18 | Decoupled request acceptance from chat creation. `POST /api/blood-request/{id}/accept` now only wins the request race and returns `chatAvailable`; the new idempotent `POST /api/chat/requests/{requestId}` opens the chat on demand (`ON CONFLICT (request_id)`), notifies the counterpart with `CHAT_OPENED`, and lets chat failures stay in the chat state machine. Donation completion closes chats through `ChatService` instead of writing `ChatRepository` directly | `BloodRequestServiceImpl`, `ChatServiceImpl`, `ChatController`, `DonationServiceImpl`, §5, §11.4 |
