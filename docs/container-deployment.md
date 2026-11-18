@@ -94,6 +94,22 @@ docker compose --env-file .env -f Docker/docker-compose.yml --profile kafka-ui u
 docker compose --env-file .env -f Docker/docker-compose.yml --profile observability up -d
 ```
 
+Log shipping is opt-in and off by default. The Logstash appender in
+`logback-spring.xml` is attached only when the `logstash` Spring profile is
+active, so a local run never retries a dead `localhost:5000`:
+
+```
+# app in the IDE/CLI, shipping to a host-run Logstash
+SPRING_PROFILES_ACTIVE=dev,logstash mvn spring-boot:run
+
+# app in Compose, shipping to the logstash service
+SPRING_PROFILES_ACTIVE=dev,logstash LOGSTASH_DESTINATION=logstash:5000
+```
+
+`LOGSTASH_DESTINATION` (default `localhost:5000`) and `LOGSTASH_ENVIRONMENT`
+(default `development`) are resolved from the Spring environment, so both
+environment variables and properties work.
+
 To run only the infrastructure and keep the application in the IDE:
 
 ```
