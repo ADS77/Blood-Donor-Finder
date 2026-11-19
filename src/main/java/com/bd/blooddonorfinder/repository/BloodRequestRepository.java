@@ -1,7 +1,10 @@
 package com.bd.blooddonorfinder.repository;
 
 import com.bd.blooddonorfinder.model.BloodRequest;
+import com.bd.blooddonorfinder.model.enums.BloodGroup;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
+import com.bd.blooddonorfinder.model.enums.RequestUrgency;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -42,6 +45,27 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, UUID
     /** Loads the requester and the accepted donor for identity checks. */
     @EntityGraph(attributePaths = {"requester", "acceptedDonor"})
     Optional<BloodRequest> findWithParticipantsById(UUID id);
+
+    /**
+     * Read model for the request list. Every filter is optional; the service
+     * decides which statuses a caller may see and passes a non-empty set.
+     * Participants are fetched eagerly because the response maps both of them.
+     */
+    @EntityGraph(attributePaths = {"requester", "acceptedDonor"})
+    @Query("""
+           SELECT b FROM BloodRequest b
+           WHERE b.status IN :statuses
+             AND (:bloodGroup IS NULL OR b.bloodGroup = :bloodGroup)
+             AND (:urgency IS NULL OR b.urgency = :urgency)
+             AND (:requesterId IS NULL OR b.requester.id = :requesterId)
+             AND (:acceptedDonorId IS NULL OR b.acceptedDonor.id = :acceptedDonorId)
+           """)
+    Page<BloodRequest> search(@Param("statuses") Collection<RequestStatus> statuses,
+                              @Param("bloodGroup") BloodGroup bloodGroup,
+                              @Param("urgency") RequestUrgency urgency,
+                              @Param("requesterId") UUID requesterId,
+                              @Param("acceptedDonorId") UUID acceptedDonorId,
+                              Pageable pageable);
 
     /** In-flight requests (PENDING/ACCEPTED/PENDING_APPROVAL/DISPUTED) for one requester. */
     long countByRequester_IdAndStatusIn(UUID requesterId, Collection<RequestStatus> statuses);

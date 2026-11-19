@@ -8,20 +8,30 @@ import com.bd.blooddonorfinder.model.common.User;
 import com.bd.blooddonorfinder.model.enums.NotificationType;
 import com.bd.blooddonorfinder.model.enums.RequestStatus;
 import com.bd.blooddonorfinder.model.enums.RequestUrgency;
+import com.bd.blooddonorfinder.payload.enums.BloodRequestScope;
 import com.bd.blooddonorfinder.payload.request.BloodRequestDto;
+import com.bd.blooddonorfinder.payload.request.BloodRequestQuery;
 import com.bd.blooddonorfinder.payload.response.BloodRequestViewDto;
+import com.bd.blooddonorfinder.payload.response.PageResponse;
 import com.bd.blooddonorfinder.payload.response.RestApiResponse;
 import com.bd.blooddonorfinder.repository.BloodRequestRepository;
 import com.bd.blooddonorfinder.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -92,6 +102,65 @@ public class BloodRequestServiceImpl implements BloodRequestService {
                 saved.getId(), requesterId, urgency, saved.getExpiresAt());
 
         return RestApiResponse.success(BloodRequestViewDto.from(saved), "Blood Request Created");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<BloodRequestViewDto> listRequests(UUID callerId, BloodRequestQuery query,
+                                                          int page, int size) {
+        Collection<RequestStatus> statuses = visibleStatuses(query.scope(), query.status());
+        if (statuses.isEmpty()) {
+            // The requested status cannot occur inside the selected scope.
+            return PageResponse.empty(page, size);
+        }
+
+        // Scope is the authorization boundary: MINE/ACCEPTED pin the person,
+        // OPEN never does.
+        UUID requesterId = query.scope() == BloodRequestScope.MINE ? callerId : null;
+        UUID acceptedDonorId = query.scope() == BloodRequestScope.ACCEPTED ? callerId : null;
+
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "requestTime").and(Sort.by(Sort.Direction.ASC, "id")));
+        Page<BloodRequest> result = bloodRequestRepository.search(
+                statuses, query.bloodGroup(), query.urgency(), requesterId, acceptedDonorId, pageable);
+
+        return PageResponse.of(result, BloodRequestViewDto::from);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BloodRequestViewDto getRequest(UUID requestId, UUID callerId) {
+        BloodRequest request = bloodRequestRepository.findWithParticipantsById(requestId)
+                .orElseThrow(() -> new AuthException(ErrorCode.REQUEST_NOT_FOUND, "Request not found"));
+
+        boolean participant = Objects.equals(callerId, request.getRequester().getId())
+                || Objects.equals(callerId, request.getAcceptedDonor() != null
+                        ? request.getAcceptedDonor().getId() : null);
+        if (!participant && request.getStatus() != RequestStatus.PENDING) {
+            // Claimed and terminal requests belong to their participants only;
+            // a silent 404 keeps ids non-enumerable.
+            log.debug("User={} requested non-public request={} in state {}",
+                    callerId, requestId, request.getStatus());
+            throw new AuthException(ErrorCode.REQUEST_NOT_FOUND, "Request not found");
+        }
+        return BloodRequestViewDto.from(request);
+    }
+
+    /**
+     * Which statuses the scope exposes. OPEN is exactly the unclaimed feed;
+     * MINE/ACCEPTED include the caller's whole history, optionally narrowed by
+     * an explicit status. An empty result means "scope and filter cannot
+     * intersect" and short-circuits the query.
+     */
+    private static Collection<RequestStatus> visibleStatuses(BloodRequestScope scope, RequestStatus status) {
+        return switch (scope) {
+            case OPEN -> status == null || status == RequestStatus.PENDING
+                    ? List.of(RequestStatus.PENDING)
+                    : List.of();
+            case MINE, ACCEPTED -> status != null
+                    ? List.of(status)
+                    : Arrays.asList(RequestStatus.values());
+        };
     }
 
     /**
