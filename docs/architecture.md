@@ -345,9 +345,14 @@ unless the endpoint is marked public.
 | `POST` | `/api/auth/logout` | Public (tokens supplied) | Revoke the supplied access and refresh tokens |
 | `GET` | `/api/auth/jwks.json` | Public | Publish the RSA public key as a JWK Set |
 | `PUT` | `/api/user/me` | Authenticated | Update the caller's own profile |
+| `GET` | `/api/user/me` | Authenticated | Read the caller's own profile, including decrypted contact details |
+| `GET` | `/api/donors/{id}` | Authenticated | Public donor detail (no contact details or exact coordinates) |
 | `POST` | `/api/user/update` | Authenticated | Backwards-compatible alias for `/me` (ignores any client-supplied user id) |
 | `POST` | `/api/user/location` | Authenticated | Publish a fresh device location (server-side throttle, Kafka fanout to ES) |
+| `GET` | `/api/blood-request` | Authenticated | Scoped, paginated request list (`scope=OPEN\|MINE\|ACCEPTED`, optional status/bloodGroup/urgency filters) |
+| `GET` | `/api/blood-request/{id}` | Authenticated | Request detail; non-participants only see still-PENDING requests |
 | `POST` | `/api/blood-request/create` | Authenticated | Create a blood request owned by the caller |
+| `POST` | `/api/blood-request/{id}/cancel` | Authenticated (requester) | Cancel an unclaimed request |
 | `POST` | `/api/blood-request/{id}/accept` | `DONOR`, `ORG_ADMIN`, `SYSTEM_ADMIN` | Atomically claim an open request (acceptance does not create a chat) |
 | `POST` | `/api/search/donors` | Authenticated | Elasticsearch donor page search |
 | `POST` | `/api/search/donors/nearby` | Authenticated | Expanding-radius nearby search (5→80 km, `search_after` pagination) |
@@ -1183,3 +1188,4 @@ Recommended style:
 | 2026-11-17 | Security audit accepted tradeoffs (documented, not changed): `IpRateLimitFilter` fails open on Redis outage (availability over strictness); no per-user chat-message rate limit (messages are 1:1 between request participants only); donor search is public by product design (sanitized, admin maintenance endpoints separately gated) | §5, `IpRateLimitFilter` |
 | 2026-11-18 | Decoupled request acceptance from chat creation. `POST /api/blood-request/{id}/accept` now only wins the request race and returns `chatAvailable`; the new idempotent `POST /api/chat/requests/{requestId}` opens the chat on demand (`ON CONFLICT (request_id)`), notifies the counterpart with `CHAT_OPENED`, and lets chat failures stay in the chat state machine. Donation completion closes chats through `ChatService` instead of writing `ChatRepository` directly | `BloodRequestServiceImpl`, `ChatServiceImpl`, `ChatController`, `DonationServiceImpl`, §5, §11.4 |
 | 2026-11-18 | Log shipping is now opt-in: the `LOGSTASH` appender is attached to the root logger only under the `logstash` Spring profile, so a plain local run no longer logs connection-refused warnings against an absent `localhost:5000`. Destination and environment come from `LOGSTASH_DESTINATION` / `LOGSTASH_ENVIRONMENT` (defaults `localhost:5000`, `development`) | `logback-spring.xml`, `docs/container-deployment.md` |
+| 2026-11-19 | Added the missing read surfaces: `GET /api/user/me` returns the caller's full profile (decrypted email/phone, roles, stats, own coordinates); `GET /api/donors/{id}` returns a public donor view with no contact details and neighbourhood-level location; `GET /api/blood-request` returns a scoped, paginated feed/history and `GET /api/blood-request/{id}` a participant-aware detail. Scope is an authorization boundary — `OPEN` is the PENDING donor feed, `MINE` the caller's requests, `ACCEPTED` the requests they claimed — and filters can only narrow it. Claimed/terminal requests read as 404 to non-participants | §5, `UserController`, `DonorController`, `BloodRequestController`, `BloodRequestServiceImpl` |
