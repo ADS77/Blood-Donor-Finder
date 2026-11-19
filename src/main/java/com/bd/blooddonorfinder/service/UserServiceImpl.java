@@ -85,6 +85,53 @@ public class UserServiceImpl implements UserService{
         return userRepository.findById(userId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileDto getProfile(UUID userId) {
+        User user = userRepository.findUserWithRolesAndPermissionsById(userId)
+                .orElseThrow(() -> new AuthException(ErrorCode.USER_NOT_FOUND, "User not found"));
+        return UserProfileDto.from(user, decryptEmail(user), decryptPhone(user));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DonorDetailDto getDonorDetail(UUID donorId) {
+        // Only active accounts holding the donor role are donors. Unknown,
+        // unverified and admin-only accounts all read the same 404 so the
+        // endpoint cannot be used to probe account state.
+        User donor = userRepository.findUserWithRolesAndPermissionsById(donorId)
+                .filter(User::isActive)
+                .filter(user -> user.getRoles() != null && user.getRoles().stream()
+                        .anyMatch(role -> AppPermissions.ROLE_DONOR.equals(role.getName())))
+                .orElseThrow(() -> new UserNotFoundException("Donor not found"));
+        return DonorDetailDto.from(donor);
+    }
+
+    private String decryptEmail(User user) {
+        return decrypt(user.getEmailToken(), "email", user.getId());
+    }
+
+    private String decryptPhone(User user) {
+        return decrypt(user.getPhoneToken(), "phone", user.getId());
+    }
+
+    /**
+     * PII decryption is best-effort for reads: a rotated or missing key must
+     * not make the caller's own profile unreachable. Returning null lets the
+     * client fall back to showing the account without contact details.
+     */
+    private String decrypt(PiiToken token, String field, UUID userId) {
+        if (token == null) {
+            return null;
+        }
+        try {
+            return piiTokenizer.decrypt(token.getId()).orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("Could not decrypt {} for user {}: {}", field, userId, e.getMessage());
+            return null;
+        }
+    }
+
     @Value("${app.security.anti-enumeration.enabled:true}")
     private boolean antiEnumerationEnabled;
 

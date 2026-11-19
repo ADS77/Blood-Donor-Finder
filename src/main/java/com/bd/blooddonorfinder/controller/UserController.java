@@ -6,13 +6,19 @@ import com.bd.blooddonorfinder.model.enums.GeoStatus;
 import com.bd.blooddonorfinder.payload.request.LocationUpdateRequest;
 import com.bd.blooddonorfinder.payload.request.UpdateProfileRequest;
 import com.bd.blooddonorfinder.payload.response.LocationUpdateResponse;
+import com.bd.blooddonorfinder.payload.response.RestApiResponse;
+import com.bd.blooddonorfinder.payload.response.UserProfileDto;
 import com.bd.blooddonorfinder.security.UserPrincipal;
 import com.bd.blooddonorfinder.service.LocationIngestService;
 import com.bd.blooddonorfinder.service.UserService;
+import com.bd.blooddonorfinder.utils.Utils;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +40,18 @@ public class UserController {
                           LocationIngestService locationIngestService) {
         this.userService = userService;
         this.locationIngestService = locationIngestService;
+    }
+
+    /**
+     * The authenticated caller's own profile, including contact details.
+     * The id always comes from the verified JWT — never from the client.
+     */
+    @PreAuthorize("@authz.isAuthenticated(authentication)")
+    @GetMapping("/me")
+    public ResponseEntity<RestApiResponse<UserProfileDto>> getCurrentUser(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Utils.buildSuccessRestResponse(HttpStatus.OK,
+                userService.getProfile(principal.getId())));
     }
 
     /**
